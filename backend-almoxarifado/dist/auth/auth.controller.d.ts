@@ -9,17 +9,26 @@ export declare class AuthController {
     }): Promise<{
         id: number;
         email: string;
+        name: string;
+        role: import("../users/entities/user.entity.js").UserRole;
     }>;
     login(body: {
         email: string;
         password: string;
     }): Promise<{
         access_token: string;
+        user: {
+            id: number;
+            email: string;
+            username: string;
+            role: import("../users/entities/user.entity.js").UserRole;
+        };
     }>;
     getProfile(req: any): Promise<{
         id: number;
         username: string;
         email: string;
+        role: import("../users/entities/user.entity.js").UserRole;
     }>;
     changePassword(req: any, body: {
         currentPassword: string;

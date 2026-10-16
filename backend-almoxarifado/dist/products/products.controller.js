@@ -28,24 +28,26 @@ let ProductsController = class ProductsController {
         return this.productsService.searchProducts(query || '');
     }
     async create(req, createProductDto) {
-        return this.productsService.create(createProductDto, req.user.userId);
+        const userId = req.user?.userId || 1;
+        return this.productsService.create(createProductDto, userId);
     }
-    update(id, updateProductDto) {
+    async update(id, updateProductDto) {
         return this.productsService.update(id, updateProductDto);
     }
-    findAll() {
+    async findAll() {
         return this.productsService.findAll();
     }
-    findOne(id) {
+    async findOne(id) {
         return this.productsService.findOne(id);
     }
-    remove(id) {
+    async remove(id) {
         return this.productsService.remove(id);
     }
-    async importXml(file, userId) {
+    async importXml(req, file, bodyUserId) {
         if (!file) {
             throw new BadRequestException('O arquivo XML da Nota Fiscal é obrigatório.');
         }
+        const userId = req.user?.userId || (bodyUserId ? Number(bodyUserId) : 1);
         const extractedItems = this.xmlParserService.extractProductsFromXml(file.buffer);
         return await this.productsService.importFromPdf(extractedItems, userId);
     }
@@ -58,7 +60,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "search", null);
 __decorate([
-    UseGuards(JwtAuthGuard),
     Post(),
     __param(0, Request()),
     __param(1, Body()),
@@ -72,35 +73,36 @@ __decorate([
     __param(1, Body()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, UpdateProductDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "update", null);
 __decorate([
     Get(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "findAll", null);
 __decorate([
     Get(':id'),
     __param(0, Param('id', ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "findOne", null);
 __decorate([
     Delete(':id'),
     __param(0, Param('id', ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "remove", null);
 __decorate([
     Post('import-xml'),
     UseInterceptors(FileInterceptor('file')),
-    __param(0, UploadedFile()),
-    __param(1, Body('userId', ParseIntPipe)),
+    __param(0, Request()),
+    __param(1, UploadedFile()),
+    __param(2, Body('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "importXml", null);
 ProductsController = __decorate([

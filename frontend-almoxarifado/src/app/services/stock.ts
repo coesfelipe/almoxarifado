@@ -2,6 +2,15 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+// Interface com os dados do usuário que cadastrou o produto
+export interface ProductCreator {
+  id: number;
+  name: string;
+  email: string;
+  role?: string;
+}
 
 // Interface idêntica ao DTO/Entity do backend NestJS
 export interface Product {
@@ -11,6 +20,9 @@ export interface Product {
   currentStock: number;
   price: number;
   measurement: string;
+  userId?: number;
+  user?: ProductCreator;
+  createdAt?: string;
 }
 
 export interface ExtractedNfeItem {
@@ -27,7 +39,7 @@ export class StockService {
   private http = inject(HttpClient);
   private isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = `${environment.apiUrl}`;
   private productsUrl = `${this.apiUrl}/products`; // Rota base dos produtos: http://localhost:3000/products
 
   getProducts(): Observable<Product[]> {

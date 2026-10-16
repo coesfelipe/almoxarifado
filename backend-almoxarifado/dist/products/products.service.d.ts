@@ -22,6 +22,7 @@ export declare class ProductsService {
             addedQuantity: number;
             newStockTotal: number;
             unitPrice: number;
+            totalPrice: number;
         }[];
     }>;
     update(id: number, updateProductDto: UpdateProductDto): Promise<Product>;

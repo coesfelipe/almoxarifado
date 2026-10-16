@@ -18,73 +18,80 @@ let AuthService = class AuthService {
         this.usersService = usersService;
         this.jwtService = jwtService;
     }
-    async register(username, email, passwordPlain) {
+    async register(username, email, passwordPlain, role) {
         const existing = await this.usersService.findOne(email);
         if (existing) {
-            throw new ConflictException('Usuário já existe');
+            throw new ConflictException('Já existe um usuário cadastrado com este e-mail.');
         }
-        const user = await this.usersService.create(username, email, passwordPlain);
-        return { id: user.id, email: user.email };
+        const user = await this.usersService.create(username, email, passwordPlain, role);
+        return { id: user.id, email: user.email, name: user.name, role: user.role };
     }
     async login(email, passwordPlain) {
         const user = await this.usersService.findOne(email);
         if (!user) {
-            throw new UnauthorizedException('Credenciais inválidas');
+            throw new UnauthorizedException('Credenciais inválidas. Verifique seu e-mail e senha.');
         }
         const isPasswordValid = await bcrypt.compare(passwordPlain, user.passwordHash);
         if (!isPasswordValid) {
-            throw new UnauthorizedException('Credenciais inválidas');
+            throw new UnauthorizedException('Credenciais inválidas. Verifique seu e-mail e senha.');
         }
-        const payload = { email: user.email, sub: user.id };
+        const payload = { email: user.email, sub: user.id, role: user.role };
         return {
             access_token: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.name,
+                role: user.role,
+            },
         };
     }
     async profile(userId) {
         const user = await this.usersService.findById(userId);
         if (!user) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('Usuário não localizado.');
         }
         return {
             id: user.id,
             username: user.name,
             email: user.email,
+            role: user.role,
         };
     }
     async changePassword(userId, currentPasswordPlain, newPasswordPlain) {
         const user = await this.usersService.findById(userId);
         if (!user) {
-            throw new UnauthorizedException('Usuário não encontrado');
+            throw new UnauthorizedException('Usuário não encontrado.');
         }
         const isPasswordValid = await bcrypt.compare(currentPasswordPlain, user.passwordHash);
         if (!isPasswordValid) {
-            throw new BadRequestException('A senha atual está incorreta');
+            throw new BadRequestException('A senha atual informada está incorreta.');
         }
         if (currentPasswordPlain === newPasswordPlain) {
-            throw new BadRequestException('A nova senha não pode ser igual à senha atual');
+            throw new BadRequestException('A nova senha não pode ser idêntica à senha atual.');
         }
         const newPasswordHash = await bcrypt.hash(newPasswordPlain, 10);
         await this.usersService.updatePassword(userId, newPasswordHash);
-        return { message: 'Senha alterada com sucesso' };
+        return { message: 'Senha alterada com sucesso!' };
     }
     async changeEmail(userId, newEmail, passwordPlain) {
         const user = await this.usersService.findById(userId);
         if (!user) {
-            throw new UnauthorizedException('Usuário não encontrado');
+            throw new UnauthorizedException('Usuário não encontrado.');
         }
-        if (user.email === newEmail) {
-            throw new BadRequestException('O novo e-mail não pode ser igual ao e-mail atual');
+        if (user.email === newEmail.trim().toLowerCase()) {
+            throw new BadRequestException('O novo e-mail informado é idêntico ao e-mail atual.');
         }
         const isPasswordValid = await bcrypt.compare(passwordPlain, user.passwordHash);
         if (!isPasswordValid) {
-            throw new BadRequestException('Senha incorreta');
+            throw new BadRequestException('Senha incorreta para confirmação da alteração.');
         }
         const existingUser = await this.usersService.findOne(newEmail);
         if (existingUser) {
-            throw new ConflictException('Este e-mail já está em uso por outra conta');
+            throw new ConflictException('Este endereço de e-mail já está em uso por outro usuário.');
         }
         await this.usersService.updateEmail(userId, newEmail);
-        return { message: 'E-mail alterado com sucesso', email: newEmail };
+        return { message: 'E-mail alterado com sucesso!', email: newEmail.trim().toLowerCase() };
     }
 };
 AuthService = __decorate([

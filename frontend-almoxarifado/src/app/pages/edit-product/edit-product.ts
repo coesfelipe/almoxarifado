@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
-import { StockService } from '../../services/stock';
+import { StockService, Product } from '../../services/stock';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-edit-product',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, Navbar],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, Navbar, Footer],
   templateUrl: './edit-product.html',
   styleUrls: ['./edit-product.css'] // Pode usar o mesmo CSS do create-product.css
 })
@@ -19,6 +20,7 @@ export class EditProduct implements OnInit {
   private route = inject(ActivatedRoute);
 
   productId = signal<number | null>(null);
+  produto = signal<Product | null>(null);
   carregando = signal<boolean>(true);
   salvando = signal<boolean>(false);
   erro = signal<string | null>(null);
@@ -47,6 +49,7 @@ export class EditProduct implements OnInit {
     this.carregando.set(true);
     this.stockService.getProductById(id).subscribe({
       next: (produto) => {
+        this.produto.set(produto);
         // Preenche o formulário com os dados vindos da API
         this.form.patchValue({
           name: produto.name,

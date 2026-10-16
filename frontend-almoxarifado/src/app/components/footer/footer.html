@@ -1,0 +1,46 @@
+<footer class="app-footer no-print">
+  <div class="footer-container">
+    
+    <!-- Coluna 1: Marca e Descrição -->
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <span class="logo-box">A</span>
+        <span class="logo-text">Almoxarifado</span>
+      </div>
+      <p class="brand-desc">
+        Plataforma corporativa para controle físico, contábil e auditoria de entradas, saídas e movimentações de estoque.
+      </p>
+    </div> <!-- FECHAMENTO CORRIGIDO AQUI -->
+
+    <!-- Coluna 2: Navegação Rápida -->
+    <div class="footer-links">
+      <h4 class="links-title">Navegação</h4>
+      <ul>
+        <li><a routerLink="/dashboard">Painel Geral (Dashboard)</a></li>
+        <li><a routerLink="/stock">Estoque de Produtos</a></li>
+        <li><a routerLink="/stock-movement">Movimentações de Estoque</a></li>
+        <li><a routerLink="/report">Relatórios & Valor Gasto</a></li>
+      </ul>
+    </div>
+
+    <!-- Coluna 3: Ferramentas & Configurações -->
+    <div class="footer-links">
+      <h4 class="links-title">Ferramentas</h4>
+      <ul>
+        <li><a routerLink="/stock/create">Cadastrar Novo Produto</a></li>
+        <li><a routerLink="/stock/create/xml">Importar NF-e (XML)</a></li>
+        <li><a routerLink="/config">Configurações de Acesso</a></li>
+        @if (isAdmin) {
+          <li><a routerLink="/users">Gestão de Usuários (ADM)</a></li>
+        }
+      </ul>
+    </div>
+
+  </div> <!-- FECHAMENTO DO footer-container -->
+
+  <div class="footer-bottom">
+    <div class="bottom-container">
+      <p>&copy; {{ anoAtual }} Almoxarifado Gestão de Estoque. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</footer>

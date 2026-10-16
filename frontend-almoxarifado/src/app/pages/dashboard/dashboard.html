@@ -115,12 +115,13 @@
               <th>Produto</th>
               <th>Tipo</th>
               <th class="num">Qtd.</th>
+              <th>Operador</th>
             </tr>
           </thead>
           <tbody>
             @if (carregando()) {
               <tr>
-                <td colspan="4" class="empty">Carregando movimentações...</td>
+                <td colspan="5" class="empty">Carregando movimentações...</td>
               </tr>
             } @else {
               @for (m of movimentacoesPaginadas(); track m.id) {
@@ -135,10 +136,15 @@
                   <td class="num">
                     <strong>{{ m.type === 'ENTRY' ? '+' : '-' }}{{ m.quantity }}</strong>
                   </td>
+                  <td>
+                    <span class="operator-badge" [title]="m.user?.email || 'Sistema'">
+                      👤 {{ m.user?.name || 'Sistema' }}
+                    </span>
+                  </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4" class="empty">Nenhuma movimentação realizada ainda.</td>
+                  <td colspan="5" class="empty">Nenhuma movimentação realizada ainda.</td>
                 </tr>
               }
             }
@@ -237,3 +243,5 @@
     </section>
   </div>
 </main>
+
+<app-footer></app-footer>

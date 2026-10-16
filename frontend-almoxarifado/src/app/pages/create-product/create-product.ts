@@ -4,11 +4,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar'; // Ajuste o caminho conforme o seu projeto
 import { StockService } from '../../services/stock';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-create-product',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, Navbar],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, Navbar, Footer],
   templateUrl: './create-product.html',
   styleUrls: ['./create-product.css']
 })

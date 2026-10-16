@@ -1,15 +1,15 @@
 import { Component, inject, OnInit, signal, computed, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, Product } from '../../services/stock';
 import { MovementService, Movement, MovementType } from '../../services/movement';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-stock-movement',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Navbar],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Navbar, Footer],
   templateUrl: './stock-movement.html',
   styleUrls: ['./stock-movement.css'],
 })

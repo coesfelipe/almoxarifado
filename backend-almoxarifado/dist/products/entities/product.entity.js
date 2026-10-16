@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, CreateDateColumn, } from 'typeorm';
 let Product = class Product {
     id;
     name;
@@ -15,6 +15,9 @@ let Product = class Product {
     measurement;
     category;
     currentStock;
+    createdAt;
+    userId;
+    user;
     movements;
 };
 __decorate([
@@ -41,6 +44,19 @@ __decorate([
     Column({ type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], Product.prototype, "currentStock", void 0);
+__decorate([
+    CreateDateColumn(),
+    __metadata("design:type", Date)
+], Product.prototype, "createdAt", void 0);
+__decorate([
+    Column({ nullable: true }),
+    __metadata("design:type", Number)
+], Product.prototype, "userId", void 0);
+__decorate([
+    ManyToOne('User', (user) => user.products, { onDelete: 'SET NULL', nullable: true }),
+    JoinColumn({ name: 'userId' }),
+    __metadata("design:type", Function)
+], Product.prototype, "user", void 0);
 __decorate([
     OneToMany('Movement', (movement) => movement.product),
     __metadata("design:type", Array)

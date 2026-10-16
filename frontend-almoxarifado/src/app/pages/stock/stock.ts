@@ -4,11 +4,12 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, Product } from '../../services/stock';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, RouterLink, Navbar],
+  imports: [CommonModule, RouterLink, Navbar, Footer],
   templateUrl: './stock.html',
   styleUrls: ['./stock.css']
 })

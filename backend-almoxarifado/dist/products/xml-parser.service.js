@@ -71,17 +71,50 @@ let XmlParserService = class XmlParserService {
         }
     }
     normalizeUnit(uCom) {
-        const unit = uCom.toUpperCase().replace(/[^A-Z]/g, '');
-        if (['UN', 'UND', 'UNID', 'PC', 'PCA', 'PÇ', 'CJ'].includes(unit))
+        if (!uCom)
             return 'UN';
-        if (['KG', 'KGR', 'KILO', 'G', 'GRM'].includes(unit))
-            return 'KG';
-        if (['L', 'LTR', 'LT', 'LITRO', 'ML'].includes(unit))
-            return 'L';
-        if (['CX', 'CXA', 'CAIXA'].includes(unit))
+        const unit = uCom.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (['UN', 'CX', 'PCT', 'FD', 'KIT', 'PAR', 'PC', 'RO', 'FL', 'KG', 'G', 'SAC', 'L', 'GAL', 'BOM', 'FR', 'LAT', 'M', 'BAR'].includes(unit)) {
+            return unit;
+        }
+        if (['UND', 'UNID', 'UNIDADE', 'CJ', 'CJO', 'JGO', 'JG'].includes(unit))
+            return 'UN';
+        if (['CXA', 'CAIXA', 'CX2', 'CX5', 'CX10', 'CX20', 'CX50'].includes(unit))
             return 'CX';
-        if (['PCT', 'PAC', 'PACOTE', 'FD', 'FARDO'].includes(unit))
+        if (['PAC', 'PACOTE'].includes(unit))
             return 'PCT';
+        if (['FDO', 'FARDO'].includes(unit))
+            return 'FD';
+        if (['KT'].includes(unit))
+            return 'KIT';
+        if (['PR'].includes(unit))
+            return 'PAR';
+        if (['PCA', 'PÇA', 'PECA'].includes(unit))
+            return 'PC';
+        if (['RL', 'ROLO'].includes(unit))
+            return 'RO';
+        if (['FLH', 'FOLHA'].includes(unit))
+            return 'FL';
+        if (['KGR', 'KILO', 'QUILO', 'TON', 'TONELADA'].includes(unit))
+            return 'KG';
+        if (['GR', 'GRM', 'GRAMA'].includes(unit))
+            return 'G';
+        if (['SACO', 'SC'].includes(unit))
+            return 'SAC';
+        if (['LTR', 'LT', 'LITRO', 'ML'].includes(unit))
+            return 'L';
+        if (['GL', 'GALAO'].includes(unit))
+            return 'GAL';
+        if (['BOMBONA', 'BALDE'].includes(unit))
+            return 'BOM';
+        if (['FRS', 'FRASCO'].includes(unit))
+            return 'FR';
+        if (['LATA'].includes(unit))
+            return 'LAT';
+        if (['MT', 'MTR', 'METRO', 'M2', 'M3'].includes(unit))
+            return 'M';
+        if (['BARRA', 'BR'].includes(unit))
+            return 'BAR';
         return 'UN';
     }
 };

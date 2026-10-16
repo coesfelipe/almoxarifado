@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UserRole } from '../users/entities/user.entity.js';
 let JwtStrategy = class JwtStrategy extends PassportStrategy(Strategy) {
     constructor() {
         super({
@@ -19,7 +20,11 @@ let JwtStrategy = class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
     async validate(payload) {
-        return { userId: payload.sub, email: payload.email };
+        return {
+            userId: payload.sub,
+            email: payload.email,
+            role: payload.role || UserRole.USER,
+        };
     }
 };
 JwtStrategy = __decorate([

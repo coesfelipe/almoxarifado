@@ -5,11 +5,12 @@ import { RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, Product } from '../../services/stock';
 import { MovementService, Movement } from '../../services/movement';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, Navbar],
+  imports: [CommonModule, RouterLink, Navbar, Footer],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
 })

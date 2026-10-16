@@ -1,15 +1,28 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
 
+/**
+ * Interface que representa um item de mercadoria extraído das tags do XML de NF-e.
+ */
 export interface ExtractedNfeItem {
+  /** Nome ou descrição comercial do item constante na tag <xProd> */
   productName: string;
+  /** Quantidade faturada constante na tag <qCom> */
   quantity: number;
+  /** Categoria deduzida com base no código NCM */
   category: string;
+  /** Nomenclatura Comum do Mercosul (NCM) do item */
   ncm: string;
+  /** Preço unitário de comercialização constante na tag <vUnCom> */
   unitPrice: number;
+  /** Unidade de medida padronizada (UN, KG, L, CX, etc.) */
   measurement: string;
 }
 
+/**
+ * Serviço especializado na extração e normalização de dados a partir de arquivos XML
+ * de Nota Fiscal Eletrônica (NF-e padrão SEFAZ Brasil).
+ */
 @Injectable()
 export class XmlParserService {
   private parser = new XMLParser({
@@ -22,6 +35,13 @@ export class XmlParserService {
     },
   });
 
+  /**
+   * Converte o buffer de bytes de um arquivo XML de NF-e em uma lista de produtos tipados.
+   *
+   * @param xmlBuffer Buffer de dados do arquivo XML enviado
+   * @returns Array de itens extraídos com valores unitários, quantidades e categorias normalizadas
+   * @throws BadRequestException Caso o XML seja inválido ou não contenha a estrutura esperada de NF-e
+   */
   extractProductsFromXml(xmlBuffer: Buffer): ExtractedNfeItem[] {
     try {
       const xmlString = xmlBuffer.toString('utf-8');
@@ -68,6 +88,12 @@ export class XmlParserService {
     }
   }
 
+  /**
+   * Classifica a categoria do produto a partir dos dois primeiros dígitos do código NCM (Capítulo).
+   *
+   * @param ncm Código NCM de 8 dígitos
+   * @returns Nome amigável da categoria
+   */
   private mapNcmToCategory(ncm: string): string {
     if (!ncm || ncm.length < 2) return 'Geral';
 
@@ -89,14 +115,42 @@ export class XmlParserService {
     }
   }
 
+  /**
+   * Padroniza as siglas de unidades de medida comerciais da NF-e para o padrão do sistema.
+   *
+   * @param uCom Unidade de comercialização bruta vinda do XML (ex: 'UNID', 'PC', 'PÇ')
+   * @returns Sigla normalizada ('UN', 'KG', 'L', 'CX', 'PCT')
+   */
   private normalizeUnit(uCom: string): string {
-    const unit = uCom.toUpperCase().replace(/[^A-Z]/g, '');
+    if (!uCom) return 'UN';
 
-    if (['UN', 'UND', 'UNID', 'PC', 'PCA', 'PÇ', 'CJ'].includes(unit)) return 'UN';
-    if (['KG', 'KGR', 'KILO', 'G', 'GRM'].includes(unit)) return 'KG';
-    if (['L', 'LTR', 'LT', 'LITRO', 'ML'].includes(unit)) return 'L';
-    if (['CX', 'CXA', 'CAIXA'].includes(unit)) return 'CX';
-    if (['PCT', 'PAC', 'PACOTE', 'FD', 'FARDO'].includes(unit)) return 'PCT';
+    const unit = uCom.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    // 1. Siglas oficiais aceitas direto
+    if (['UN', 'CX', 'PCT', 'FD', 'KIT', 'PAR', 'PC', 'RO', 'FL', 'KG', 'G', 'SAC', 'L', 'GAL', 'BOM', 'FR', 'LAT', 'M', 'BAR'].includes(unit)) {
+      return unit;
+    }
+
+    // 2. Mapeamento de variações e sinonímias
+    if (['UND', 'UNID', 'UNIDADE', 'CJ', 'CJO', 'JGO', 'JG'].includes(unit)) return 'UN';
+    if (['CXA', 'CAIXA', 'CX2', 'CX5', 'CX10', 'CX20', 'CX50'].includes(unit)) return 'CX';
+    if (['PAC', 'PACOTE'].includes(unit)) return 'PCT';
+    if (['FDO', 'FARDO'].includes(unit)) return 'FD';
+    if (['KT'].includes(unit)) return 'KIT';
+    if (['PR'].includes(unit)) return 'PAR';
+    if (['PCA', 'PÇA', 'PECA'].includes(unit)) return 'PC';
+    if (['RL', 'ROLO'].includes(unit)) return 'RO';
+    if (['FLH', 'FOLHA'].includes(unit)) return 'FL';
+    if (['KGR', 'KILO', 'QUILO', 'TON', 'TONELADA'].includes(unit)) return 'KG';
+    if (['GR', 'GRM', 'GRAMA'].includes(unit)) return 'G';
+    if (['SACO', 'SC'].includes(unit)) return 'SAC';
+    if (['LTR', 'LT', 'LITRO', 'ML'].includes(unit)) return 'L';
+    if (['GL', 'GALAO'].includes(unit)) return 'GAL';
+    if (['BOMBONA', 'BALDE'].includes(unit)) return 'BOM';
+    if (['FRS', 'FRASCO'].includes(unit)) return 'FR';
+    if (['LATA'].includes(unit)) return 'LAT';
+    if (['MT', 'MTR', 'METRO', 'M2', 'M3'].includes(unit)) return 'M';
+    if (['BARRA', 'BR'].includes(unit)) return 'BAR';
 
     return 'UN';
   }

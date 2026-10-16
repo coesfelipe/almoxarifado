@@ -4,11 +4,12 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, ExtractedNfeItem } from '../../services/stock';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   selector: 'app-xml-upload',
   standalone: true,
-  imports: [CommonModule, Navbar],
+  imports: [CommonModule, Navbar, Footer],
   templateUrl: './xml-uploud.html', 
   styleUrls: ['./xml-uploud.css']
 })

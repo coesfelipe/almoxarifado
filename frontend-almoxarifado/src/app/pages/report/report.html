@@ -1,3 +1,414 @@
 <app-navbar></app-navbar>
 
-<p style="display: flex; align-items: center; justify-content: center; padding: 2rem;">Página ainda em desenvolvimento....</p>
+<main class="page">
+  <!-- Cabeçalho do Relatório e Ações de Exportação -->
+  <header class="page-header">
+    <div>
+      <h1>Relatório de Movimentações de Estoque</h1>
+      <p>
+        Acompanhe o valor gasto total, valor unitário dos itens, histórico de entradas e saídas
+        e saldo financeiro filtrados por determinados períodos de datas.
+      </p>
+    </div>
+
+    <!-- Botões de Ação (Exportação e Impressão) -->
+    <div class="header-actions no-print">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="exportarCsv()"
+        [disabled]="carregando() || movimentacoes().length === 0"
+        title="Baixar planilha no formato CSV/Excel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Exportar CSV</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="imprimirRelatorio()"
+        [disabled]="carregando() || movimentacoes().length === 0"
+        title="Imprimir relatório ou salvar em PDF">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span>Imprimir / PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Alerta de Erro -->
+  @if (erro()) {
+    <div class="alert-error no-print">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ erro() }}</span>
+      <button type="button" class="btn-retry" (click)="carregarRelatorio()">Tentar novamente</button>
+    </div>
+  }
+
+  <!-- Seção de Filtros por Período de Datas e Parâmetros -->
+  <section class="card filter-card no-print">
+    <div class="filter-header">
+      <div class="filter-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>Filtrar Movimentações</span>
+      </div>
+
+      <!-- Atalhos de Período Rápido -->
+      <div class="date-shortcuts">
+        <span class="shortcuts-label">Período rápido:</span>
+        <button type="button" class="btn-chip" (click)="definirHoje()">Hoje</button>
+        <button type="button" class="btn-chip" (click)="definirUltimos7Dias()">Últimos 7 dias</button>
+        <button type="button" class="btn-chip" (click)="definirEsteMes()">Este Mês</button>
+        <button type="button" class="btn-chip" (click)="definirUltimos30Dias()">Últimos 30 dias</button>
+      </div>
+    </div>
+
+    <form class="filter-form" (ngSubmit)="carregarRelatorio()">
+      <div class="filter-grid">
+        <!-- Data Inicial -->
+        <div class="form-group">
+          <label for="dataInicio" class="form-label">Data Início</label>
+          <input
+            type="date"
+            id="dataInicio"
+            class="form-control"
+            [ngModel]="dataInicio()"
+            (ngModelChange)="dataInicio.set($event)"
+            name="dataInicio" />
+        </div>
+
+        <!-- Data Final -->
+        <div class="form-group">
+          <label for="dataFim" class="form-label">Data Fim</label>
+          <input
+            type="date"
+            id="dataFim"
+            class="form-control"
+            [ngModel]="dataFim()"
+            (ngModelChange)="dataFim.set($event)"
+            name="dataFim" />
+        </div>
+
+        <!-- Tipo de Movimentação -->
+        <div class="form-group">
+          <label for="filtroTipo" class="form-label">Tipo de Operação</label>
+          <select
+            id="filtroTipo"
+            class="form-control"
+            [ngModel]="filtroTipo()"
+            (ngModelChange)="filtroTipo.set($event)"
+            name="filtroTipo">
+            <option value="">Todas (Entradas e Saídas)</option>
+            <option value="ENTRY">↓ Apenas Entradas</option>
+            <option value="EXIT">↑ Apenas Saídas</option>
+          </select>
+        </div>
+
+        <!-- Nome do Produto -->
+        <div class="form-group">
+          <label for="buscaProduto" class="form-label">Produto</label>
+          <input
+            type="text"
+            id="buscaProduto"
+            class="form-control"
+            placeholder="Buscar por nome do produto..."
+            [ngModel]="buscaProduto()"
+            (ngModelChange)="buscaProduto.set($event)"
+            name="buscaProduto" />
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" class="btn btn-secondary" (click)="limparFiltros()">
+          Limpar Filtros
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="carregando()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Atualizar Relatório</span>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Indicador de Período para Impressão -->
+  <div class="print-only print-period-banner">
+    <strong>Relatório de Almoxarifado</strong> — Período:
+    {{ dataInicio() ? (dataInicio() | date: 'dd/MM/yyyy') : 'Início' }} até
+    {{ dataFim() ? (dataFim() | date: 'dd/MM/yyyy') : 'Hoje' }}
+  </div>
+
+  <!-- Cards de Indicadores Consolidados (KPIs) -->
+  @if (resumo(); as sum) {
+    <section class="kpi-grid">
+      <!-- 1. Valor Gasto Total (Saídas de Consumo) -->
+      <div class="kpi-card kpi-spent">
+        <div class="kpi-header">
+          <span class="kpi-title">Valor Gasto Total (Saídas)</span>
+          <span class="kpi-badge kpi-badge-exit">Saída</span>
+        </div>
+        <div class="kpi-value text-danger">
+          {{ formatarMoeda(sum.totalSpent) }}
+        </div>
+        <div class="kpi-footer">
+          <span>{{ sum.totalExitsQuantity }} itens retirados em {{ sum.movementsCount }} operações</span>
+        </div>
+      </div>
+
+      <!-- 2. Valor Total de Entradas -->
+      <div class="kpi-card kpi-entries">
+        <div class="kpi-header">
+          <span class="kpi-title">Valor Total de Entradas</span>
+          <span class="kpi-badge kpi-badge-entry">Entrada</span>
+        </div>
+        <div class="kpi-value text-success">
+          {{ formatarMoeda(sum.totalEntriesValue) }}
+        </div>
+        <div class="kpi-footer">
+          <span>{{ sum.totalEntriesQuantity }} itens adicionados ao almoxarifado</span>
+        </div>
+      </div>
+
+      <!-- 3. Saldo Financeiro Movimentado -->
+      <div class="kpi-card kpi-balance">
+        <div class="kpi-header">
+          <span class="kpi-title">Saldo Financeiro Líquido</span>
+          <span class="kpi-badge kpi-badge-neutral">Entradas - Saídas</span>
+        </div>
+        <div class="kpi-value" [class.text-success]="sum.balanceValue >= 0" [class.text-danger]="sum.balanceValue < 0">
+          {{ formatarMoeda(sum.balanceValue) }}
+        </div>
+        <div class="kpi-footer">
+          <span>Balanço contábil do período</span>
+        </div>
+      </div>
+
+      <!-- 4. Volume Físico & Transações -->
+      <div class="kpi-card kpi-volume">
+        <div class="kpi-header">
+          <span class="kpi-title">Volume Total Movimentado</span>
+          <span class="kpi-badge kpi-badge-neutral">Itens Físicos</span>
+        </div>
+        <div class="kpi-value text-primary">
+          {{ sum.totalItemsQuantity }} <span class="kpi-unit">unidades</span>
+        </div>
+        <div class="kpi-footer">
+          <span>{{ sum.movementsCount }} movimentações registradas</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Tabela de Movimentações Detalhada -->
+  <section class="card table-card">
+    <div class="table-header">
+      <div>
+        <h2>Detalhamento das Movimentações</h2>
+        <p class="table-subtitle">
+          Listagem com valor unitário do item, quantidade, valor gasto total da operação e solicitante.
+        </p>
+      </div>
+
+      <div class="table-count-badge">
+        {{ movimentacoes().length }} registros encontrados
+      </div>
+    </div>
+
+    @if (carregando()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Calculando indicadores e consolidando movimentações...</p>
+      </div>
+    } @else if (movimentacoes().length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <h3>Nenhuma movimentação encontrada</h3>
+        <p>Não foram localizados registros para o período e critérios de filtro selecionados.</p>
+        <button type="button" class="btn btn-secondary" (click)="limparFiltros()">
+          Restabelecer Período Padrão
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Data & Hora</th>
+              <th>Operação</th>
+              <th>Produto</th>
+              <th class="text-right">Qtd</th>
+              <th class="text-right">Valor Unitário</th>
+              <th class="text-right">Valor Total</th>
+              <th>Operador</th>
+              <th>Solicitante / Setor</th>
+              <th>Observação / Documento</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mov of movimentacoesPaginadas(); track mov.id) {
+              <tr>
+                <!-- Data e Hora -->
+                <td class="col-date">
+                  <span class="date-text">{{ formatarDataHora(mov.createdAt) }}</span>
+                </td>
+
+                <!-- Tipo / Operação -->
+                <td class="col-type">
+                  @if (mov.type === 'ENTRY') {
+                    <span class="badge-type badge-entry">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                      </svg>
+                      Entrada
+                    </span>
+                  } @else {
+                    <span class="badge-type badge-exit">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                      </svg>
+                      Saída
+                    </span>
+                  }
+                </td>
+
+                <!-- Produto -->
+                <td class="col-product">
+                  <div class="product-name">{{ mov.product?.name || 'Item não especificado' }}</div>
+                  <div class="product-meta">
+                    <span class="product-cat">{{ mov.product?.category || 'Geral' }}</span>
+                    <span class="product-divider">•</span>
+                    <span class="product-unit">{{ mov.product?.measurement || 'UN' }}</span>
+                  </div>
+                </td>
+
+                <!-- Quantidade -->
+                <td class="col-qty text-right font-semibold">
+                  {{ mov.quantity }} {{ mov.product?.measurement || 'UN' }}
+                </td>
+
+                <!-- Valor Unitário dos Itens -->
+                <td class="col-unit-price text-right font-mono">
+                  {{ formatarMoeda(obterValorUnitario(mov)) }}
+                </td>
+
+                <!-- Valor Total Gasto / Transacionado -->
+                <td class="col-total-price text-right font-mono font-bold" [class.text-danger]="mov.type === 'EXIT'" [class.text-success]="mov.type === 'ENTRY'">
+                  {{ formatarMoeda(obterValorTotal(mov)) }}
+                </td>
+
+                <!-- Operador / Usuário que realizou a movimentação -->
+                <td class="col-user">
+                  <span class="user-badge" [title]="mov.user?.email || 'Sistema'">
+                    <span class="user-avatar-mini">{{ (mov.user?.name || 'S')[0].toUpperCase() }}</span>
+                    <span>{{ mov.user?.name || 'Sistema' }}</span>
+                  </span>
+                </td>
+
+                <!-- Solicitante -->
+                <td class="col-requester">
+                  {{ mov.requester || '-' }}
+                </td>
+
+                <!-- Descrição / Observação -->
+                <td class="col-desc">
+                  <span class="desc-text" [title]="mov.description || ''">
+                    {{ mov.description || '-' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="table-total-row">
+              <td colspan="3" class="font-bold">Totalizadores do Período Filtrado:</td>
+              <td class="text-right font-bold">{{ resumo()?.totalItemsQuantity || 0 }} itens</td>
+              <td class="text-right text-muted">-</td>
+              <td class="text-right font-bold font-mono">
+                Gasto (Saídas): {{ formatarMoeda(resumo()?.totalSpent) }}
+              </td>
+              <td colspan="3" class="text-muted">
+                Entradas: {{ formatarMoeda(resumo()?.totalEntriesValue) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      <div class="pagination-bar no-print">
+        <div class="pagination-info">
+          Exibindo
+          <strong>{{ (paginaAtual() - 1) * itensPorPagina() + 1 }}</strong>
+          a
+          <strong>{{ (paginaAtual() * itensPorPagina() > movimentacoes().length ? movimentacoes().length : paginaAtual() * itensPorPagina()) }}</strong>
+          de
+          <strong>{{ movimentacoes().length }}</strong> movimentações
+        </div>
+
+        <div class="pagination-controls">
+          <div class="items-per-page">
+            <label for="perPage">Itens por página:</label>
+            <select id="perPage" (change)="alterarItensPorPagina($event)" [value]="itensPorPagina()">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="pagination-buttons">
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaAtual() === 1"
+              (click)="irParaPagina(paginaAtual() - 1)">
+              &lsaquo; Anterior
+            </button>
+
+            @for (p of paginasArray(); track p) {
+              @if (p === 1 || p === totalPaginas() || (p >= paginaAtual() - 2 && p <= paginaAtual() + 2)) {
+                <button
+                  type="button"
+                  class="btn-page"
+                  [class.active]="paginaAtual() === p"
+                  (click)="irParaPagina(p)">
+                  {{ p }}
+                </button>
+              }
+            }
+
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaAtual() === totalPaginas()"
+              (click)="irParaPagina(paginaAtual() + 1)">
+              Próxima &rsaquo;
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+</main>
+
+<app-footer></app-footer>

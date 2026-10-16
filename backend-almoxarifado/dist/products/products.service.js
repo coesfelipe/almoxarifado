@@ -28,39 +28,66 @@ let ProductsService = class ProductsService {
     async searchProducts(query) {
         return await this.productRepository.find({
             where: {
-                name: Like(`%${query}%`),
+                name: Like(`%${query.trim()}%`),
             },
+            relations: { user: true },
             order: { name: 'ASC' },
         });
     }
     async create(createProductDto, userId = 1) {
         return await this.dataSource.transaction(async (manager) => {
-            const product = manager.create(Product, createProductDto);
-            const savedProduct = await manager.save(product);
+            let user = await manager.findOne(User, { where: { id: userId } });
+            if (!user) {
+                user = await manager.findOne(User, { where: {} });
+            }
+            const product = manager.create(Product, {
+                name: createProductDto.name.trim(),
+                price: Number(createProductDto.price),
+                category: createProductDto.category.trim(),
+                measurement: createProductDto.measurement.trim().toUpperCase(),
+                currentStock: createProductDto.currentStock ? Number(createProductDto.currentStock) : 0,
+                userId: user?.id,
+                user: user ?? undefined,
+            });
+            const savedProduct = await manager.save(Product, product);
             if (savedProduct.currentStock > 0) {
+                const unitPrice = Number(savedProduct.price);
+                const totalPrice = Number((savedProduct.currentStock * unitPrice).toFixed(2));
                 const initialMovement = manager.create(Movement, {
                     type: MovementType.ENTRY,
                     quantity: savedProduct.currentStock,
+                    unitPrice,
+                    totalPrice,
                     requester: 'Cadastro Inicial de Produto',
-                    description: 'Entrada automática gerada no cadastro do item',
-                    userId: userId,
+                    description: 'Entrada automática gerada no cadastro do item no sistema',
+                    userId: user?.id ?? userId,
+                    productId: savedProduct.id,
+                    user: user ?? undefined,
                     product: savedProduct,
                 });
-                await manager.save(initialMovement);
+                await manager.save(Movement, initialMovement);
             }
             return savedProduct;
         });
     }
     async findAll() {
-        return await this.productRepository.find();
+        return await this.productRepository.find({
+            relations: { user: true },
+            order: { name: 'ASC' },
+        });
     }
     async findOne(id) {
         const product = await this.productRepository.findOne({
             where: { id },
-            relations: { movements: true },
+            relations: {
+                user: true,
+                movements: {
+                    user: true,
+                },
+            },
         });
         if (!product) {
-            throw new NotFoundException(`Produto com ID ${id} não foi encontrado.`);
+            throw new NotFoundException(`Produto com ID #${id} não foi encontrado.`);
         }
         return product;
     }
@@ -79,35 +106,45 @@ let ProductsService = class ProductsService {
                 let product = await manager.findOne(Product, {
                     where: { name: item.productName },
                 });
+                const unitPrice = Number(item.unitPrice || 0);
+                const itemQuantity = Number(item.quantity || 0);
+                const totalPrice = Number((itemQuantity * unitPrice).toFixed(2));
                 if (!product) {
                     product = manager.create(Product, {
                         name: item.productName,
-                        price: item.unitPrice,
+                        price: unitPrice,
                         measurement: item.measurement,
                         category: item.category,
                         currentStock: 0,
+                        userId: user.id,
+                        user,
                     });
-                    product = await manager.save(product);
+                    product = await manager.save(Product, product);
                 }
                 else {
-                    product.price = item.unitPrice;
+                    product.price = unitPrice;
                 }
-                product.currentStock += item.quantity;
-                await manager.save(product);
+                product.currentStock += itemQuantity;
+                await manager.save(Product, product);
                 const movement = manager.create(Movement, {
                     type: MovementType.ENTRY,
-                    quantity: item.quantity,
+                    quantity: itemQuantity,
+                    unitPrice,
+                    totalPrice,
                     requester: 'Importação de NF-e',
-                    description: `Entrada via importação de nota/PDF: ${item.productName}`,
-                    userId: userId,
-                    product: product,
+                    description: `Entrada via importação de NF-e: ${item.productName}`,
+                    userId: user.id,
+                    productId: product.id,
+                    user,
+                    product,
                 });
-                await manager.save(movement);
+                await manager.save(Movement, movement);
                 processedItems.push({
                     productName: product.name,
-                    addedQuantity: item.quantity,
+                    addedQuantity: itemQuantity,
                     newStockTotal: product.currentStock,
                     unitPrice: product.price,
+                    totalPrice,
                 });
             }
             return {
@@ -119,13 +156,13 @@ let ProductsService = class ProductsService {
     }
     async update(id, updateProductDto) {
         const product = await this.productRepository.preload({
-            id: id,
+            id,
             ...updateProductDto,
         });
         if (!product) {
             throw new NotFoundException(`Produto com ID #${id} não encontrado.`);
         }
-        return this.productRepository.save(product);
+        return await this.productRepository.save(product);
     }
 };
 ProductsService = __decorate([

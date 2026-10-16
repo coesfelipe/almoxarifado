@@ -9,12 +9,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Movement } from '../../movements/entities/movement.entity.js';
+export var UserRole;
+(function (UserRole) {
+    UserRole["ADMIN"] = "ADMIN";
+    UserRole["USER"] = "USER";
+})(UserRole || (UserRole = {}));
 let User = class User {
     id;
     email;
     name;
+    role;
     passwordHash;
     movements;
+    products;
 };
 __decorate([
     PrimaryGeneratedColumn(),
@@ -29,6 +36,14 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "name", void 0);
 __decorate([
+    Column({
+        type: 'text',
+        enum: UserRole,
+        default: UserRole.USER,
+    }),
+    __metadata("design:type", String)
+], User.prototype, "role", void 0);
+__decorate([
     Column(),
     __metadata("design:type", String)
 ], User.prototype, "passwordHash", void 0);
@@ -36,6 +51,10 @@ __decorate([
     OneToMany(() => Movement, (movement) => movement.user),
     __metadata("design:type", Array)
 ], User.prototype, "movements", void 0);
+__decorate([
+    OneToMany('Product', (product) => product.user),
+    __metadata("design:type", Array)
+], User.prototype, "products", void 0);
 User = __decorate([
     Entity('users')
 ], User);

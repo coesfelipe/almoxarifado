@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Navbar } from '../../components/navbar/navbar';
 import { AuthService } from '../../services/auth';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, Navbar],
+  imports: [CommonModule, ReactiveFormsModule, Navbar, Footer],
   selector: 'app-config',
   styleUrl: './config.css',
   templateUrl: './config.html',

@@ -1,0 +1,96 @@
+.kpi-card-box {
+  background: #ffffff;
+  border: 1px solid #e6e9f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  padding: 1.35rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.kpi-card-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.03);
+}
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  gap: 0.5rem;
+}
+
+.kpi-title-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #647087;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpi-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.chip-exit {
+  background: #fff1f3;
+  color: #9f1239;
+  border: 1px solid #fecdd6;
+}
+
+.chip-entry {
+  background: #effaf3;
+  color: #166534;
+  border: 1px solid #b7ebc8;
+}
+
+.chip-neutral {
+  background: #f2f4f9;
+  color: #2b3446;
+  border: 1px solid #e6e9f0;
+}
+
+.chip-primary {
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.kpi-value-text {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+  color: #0b1220;
+}
+
+.value-danger { color: #e11d48; }
+.value-success { color: #16a34a; }
+.value-primary { color: #4f46e5; }
+.value-warning { color: #d97706; }
+
+.kpi-bottom-footer {
+  font-size: 0.8rem;
+  color: #647087;
+  border-top: 1px solid #f1f3f8;
+  padding-top: 0.5rem;
+}
+
+.variant-danger { border-left: 4px solid #e11d48; }
+.variant-success { border-left: 4px solid #16a34a; }
+.variant-primary { border-left: 4px solid #4f46e5; }
+.variant-warning { border-left: 4px solid #f59e0b; }
+.variant-default { border-left: 4px solid #94a3b8; }
+

@@ -1,8 +1,18 @@
 <app-navbar></app-navbar>
 
 <div class="container my-4">
-  <div class="page-header">
-    <h2>Editar Produto</h2>
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+      <h2>Editar Produto #{{ productId() }}</h2>
+      @if (produto()?.user) {
+        <p class="text-muted" style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #64748b;">
+          Cadastrado por: <strong style="color: #0b1220;">{{ produto()?.user?.name }}</strong> ({{ produto()?.user?.email }})
+          @if (produto()?.createdAt) {
+            em {{ produto()?.createdAt | date:'dd/MM/yyyy HH:mm' }}
+          }
+        </p>
+      }
+    </div>
   </div>
 
   @if (erro()) {
@@ -119,3 +129,5 @@
     </form>
   }
 </div>
+
+<app-footer></app-footer>

@@ -1,0 +1,19 @@
+<div class="kpi-card-box" [ngClass]="'variant-' + variant">
+  <div class="kpi-top">
+    <span class="kpi-title-text">{{ title }}</span>
+    @if (badgeText) {
+      <span class="kpi-chip" [ngClass]="'chip-' + badgeType">{{ badgeText }}</span>
+    }
+  </div>
+
+  <div class="kpi-value-text" [ngClass]="'value-' + variant">
+    {{ value }}
+  </div>
+
+  @if (footerText) {
+    <div class="kpi-bottom-footer">
+      <span>{{ footerText }}</span>
+    </div>
+  }
+</div>
+

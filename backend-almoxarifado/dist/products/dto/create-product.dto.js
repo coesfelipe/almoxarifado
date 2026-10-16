@@ -8,6 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { IsNotEmpty, IsNumber, IsString, IsPositive, IsOptional, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 export class CreateProductDto {
     name;
     price;
@@ -16,28 +17,30 @@ export class CreateProductDto {
     currentStock;
 }
 __decorate([
-    IsString(),
-    IsNotEmpty(),
+    IsString({ message: 'O nome do produto deve ser texto' }),
+    IsNotEmpty({ message: 'O nome do produto é obrigatório' }),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "name", void 0);
 __decorate([
-    IsNumber(),
-    IsPositive(),
+    Type(() => Number),
+    IsNumber({}, { message: 'O preço deve ser um valor numérico válido' }),
+    IsPositive({ message: 'O preço unitário deve ser maior que zero' }),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "price", void 0);
 __decorate([
-    IsString(),
-    IsNotEmpty(),
+    IsString({ message: 'A categoria deve ser texto' }),
+    IsNotEmpty({ message: 'A categoria do produto é obrigatória' }),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "category", void 0);
 __decorate([
-    IsString(),
-    IsNotEmpty(),
+    IsString({ message: 'A unidade de medida deve ser texto' }),
+    IsNotEmpty({ message: 'A unidade de medida é obrigatória' }),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "measurement", void 0);
 __decorate([
-    IsInt(),
-    Min(0),
+    Type(() => Number),
+    IsInt({ message: 'O estoque inicial deve ser um número inteiro' }),
+    Min(0, { message: 'O estoque inicial não pode ser negativo' }),
     IsOptional(),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "currentStock", void 0);

@@ -79,11 +79,32 @@
           class="form-select"
           [class.is-invalid]="campoInvalido('measurement')"
         >
+          <!-- Contáveis / Embalagens Gerais -->
           <option value="UN">Unidade (UN)</option>
-          <option value="KG">Quilograma (KG)</option>
-          <option value="L">Litro (L)</option>
           <option value="CX">Caixa (CX)</option>
           <option value="PCT">Pacote (PCT)</option>
+          <option value="FD">Fardo (FD)</option>
+          <option value="KIT">Kit (KIT)</option>
+          <option value="PAR">Par (PAR)</option>
+          <option value="PC">Peça (PC)</option>
+          <option value="RO">Rolo (RO)</option>
+          <option value="FL">Folha (FL)</option>
+          
+          <!-- Massa / Peso -->
+          <option value="KG">Quilograma (KG)</option>
+          <option value="G">Grama (G)</option>
+          <option value="SAC">Saco (SAC)</option>
+          
+          <!-- Volume / Líquidos -->
+          <option value="L">Litro (L)</option>
+          <option value="GAL">Galão (GAL)</option>
+          <option value="BOM">Bombona (BOM)</option>
+          <option value="FR">Frasco (FR)</option>
+          <option value="LAT">Lata (LAT)</option>
+          
+          <!-- Comprimento / Geometria -->
+          <option value="M">Metro (M)</option>
+          <option value="BAR">Barra (BAR)</option>
         </select>
         @if (campoInvalido('measurement')) {
           <div class="invalid-feedback">A unidade de medida é obrigatória.</div>
@@ -122,3 +143,5 @@
     </div>
   </form>
 </div>
+
+<app-footer></app-footer>

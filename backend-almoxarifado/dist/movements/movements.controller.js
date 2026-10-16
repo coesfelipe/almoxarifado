@@ -10,50 +10,53 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Post, Get, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Query, Request } from '@nestjs/common';
 import { MovementsService } from './movements.service.js';
 import { CreateMovementDto } from './dto/create-movement.dto.js';
+import { FilterMovementReportDto } from './dto/filter-movement-report.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { MovementType } from './entities/movement.entity.js';
 let MovementsController = class MovementsController {
     movementsService;
     constructor(movementsService) {
         this.movementsService = movementsService;
     }
-    async searchMovements(type, productName, productId, userId, startDate, endDate) {
-        return await this.movementsService.search({
-            type,
-            productName,
-            productId: productId ? Number(productId) : undefined,
-            userId: userId ? Number(userId) : undefined,
-            startDate,
-            endDate,
+    async getReport(filters) {
+        return await this.movementsService.getReport(filters);
+    }
+    async searchMovements(filters) {
+        return await this.movementsService.search(filters);
+    }
+    async create(req, createMovementDto) {
+        const effectiveUserId = req.user?.userId || createMovementDto.userId || 1;
+        return await this.movementsService.create({
+            ...createMovementDto,
+            userId: effectiveUserId,
         });
     }
-    async create(createMovementDto) {
-        return this.movementsService.create(createMovementDto);
-    }
     async findAll() {
-        return this.movementsService.findAll();
+        return await this.movementsService.findAll();
     }
 };
 __decorate([
-    Get('search'),
-    __param(0, Query('type')),
-    __param(1, Query('productName')),
-    __param(2, Query('productId')),
-    __param(3, Query('userId')),
-    __param(4, Query('startDate')),
-    __param(5, Query('endDate')),
+    Get('report'),
+    __param(0, Query()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Number, Number, String, String]),
+    __metadata("design:paramtypes", [FilterMovementReportDto]),
+    __metadata("design:returntype", Promise)
+], MovementsController.prototype, "getReport", null);
+__decorate([
+    Get('search'),
+    __param(0, Query()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [FilterMovementReportDto]),
     __metadata("design:returntype", Promise)
 ], MovementsController.prototype, "searchMovements", null);
 __decorate([
     Post(),
-    __param(0, Body()),
+    __param(0, Request()),
+    __param(1, Body()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CreateMovementDto]),
+    __metadata("design:paramtypes", [Object, CreateMovementDto]),
     __metadata("design:returntype", Promise)
 ], MovementsController.prototype, "create", null);
 __decorate([
