@@ -129,7 +129,7 @@ export class MovementsService {
         quantity: dto.quantity,
         unitPrice,
         totalPrice,
-        requester: dto.requester?.trim() || undefined,
+        requester: dto.type === MovementType.EXIT ? (dto.requester?.trim() || undefined) : undefined,
         description: dto.description?.trim() || undefined,
         userId: user.id,
         productId: product.id,

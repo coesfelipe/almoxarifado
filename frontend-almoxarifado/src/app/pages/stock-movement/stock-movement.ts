@@ -45,7 +45,7 @@ export class StockMovement implements OnInit {
     productId: [null as number | null, [Validators.required]],
     type: ['ENTRY' as MovementType, [Validators.required]],
     quantity: [1, [Validators.required, Validators.min(1)]],
-    requester: [''],
+    requester: [{ value: '', disabled: true }],
     description: [''],
   });
 
@@ -172,6 +172,14 @@ export class StockMovement implements OnInit {
     this.tipo.set(tipo);
     this.form.patchValue({ type: tipo });
 
+    // Em Entradas, o solicitante não é aplicável e fica desabilitado
+    if (tipo === 'ENTRY') {
+      this.form.get('requester')?.disable();
+      this.form.patchValue({ requester: '' });
+    } else {
+      this.form.get('requester')?.enable();
+    }
+
     // Se mudou para Saída e o produto escolhido está sem estoque, limpa a seleção
     const prod = this.produtoSelecionado();
     if (tipo === 'EXIT' && prod && prod.currentStock < 1) {
@@ -201,12 +209,15 @@ export class StockMovement implements OnInit {
 
     const currentUserId = Number(localStorage.getItem('userId')) || 1;
 
+    // Se a operação for de ENTRADA, o solicitante é explicitamente desconsiderado (undefined)
+    const solicitante = values.type === 'EXIT' ? (values.requester?.trim() || undefined) : undefined;
+
     this.movementService
       .createMovement({
         productId: values.productId!,
         type: values.type,
         quantity: values.quantity,
-        requester: values.requester || undefined,
+        requester: solicitante,
         description: values.description || undefined,
         userId: currentUserId,
       })
@@ -217,6 +228,9 @@ export class StockMovement implements OnInit {
           );
           this.salvando.set(false);
           this.form.patchValue({ quantity: 1, requester: '', description: '' });
+          if (this.tipo() === 'ENTRY') {
+            this.form.get('requester')?.disable();
+          }
           this.limparProduto();
           this.carregarDados();
         },

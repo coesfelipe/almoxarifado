@@ -828,3 +828,25 @@ form .d-flex.justify-content-end {
   justify-content: center;
   flex-shrink: 0;
 }
+
+/* Estilos para campos desabilitados contextualizados */
+.form-control:disabled,
+.form-control[disabled] {
+  background-color: #f1f3f8;
+  color: #8b95a5;
+  cursor: not-allowed;
+  border-color: #e2e6ee;
+  opacity: 0.9;
+}
+
+.field-disabled label {
+  color: var(--gray);
+}
+
+.badge-disabled-note {
+  font-size: 0.725rem;
+  font-weight: 500;
+  color: var(--gray);
+  margin-left: 0.35rem;
+  font-style: italic;
+}
