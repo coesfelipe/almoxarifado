@@ -146,11 +146,21 @@
     </form>
   </section>
 
-  <!-- Indicador de Período para Impressão -->
+  <!-- Indicador de Período e Mês de Referência para Impressão -->
   <div class="print-only print-period-banner">
-    <strong>Relatório de Almoxarifado</strong> — Período:
-    {{ dataInicio() ? (dataInicio() | date: 'dd/MM/yyyy') : 'Início' }} até
-    {{ dataFim() ? (dataFim() | date: 'dd/MM/yyyy') : 'Hoje' }}
+    <div class="print-banner-title">
+      <h2>Almoxarifado — Relatório de Movimentações de Estoque</h2>
+      <span class="print-banner-date">Emissão: {{ dataHojeFormatada }}</span>
+    </div>
+    <div class="print-banner-details">
+      <div><strong>Mês de Referência:</strong> <span class="badge-month-ref">{{ mesReferenciaTexto() }}</span></div>
+      <div>
+        <strong>Período:</strong>
+        {{ dataInicio() ? (dataInicio() | date: 'dd/MM/yyyy') : 'Início' }} até
+        {{ dataFim() ? (dataFim() | date: 'dd/MM/yyyy') : 'Hoje' }}
+      </div>
+      <div><strong>Total de Movimentações:</strong> {{ movimentacoes().length }} registros</div>
+    </div>
   </div>
 
   <!-- Cards de Indicadores Consolidados (KPIs) -->
@@ -251,27 +261,30 @@
         <table class="report-table">
           <thead>
             <tr>
-              <th>Data & Hora</th>
-              <th>Operação</th>
-              <th>Produto</th>
-              <th class="text-right">Qtd</th>
+              <th>Mês / Data</th>
+              <th class="no-print-col">Operação</th>
+              <th>Setor Destinado</th>
+              <th>Item</th>
+              <th>Categoria</th>
+              <th>Unidade</th>
+              <th class="text-right">Quantidade</th>
               <th class="text-right">Valor Unitário</th>
               <th class="text-right">Valor Total</th>
-              <th>Operador</th>
-              <th>Solicitante / Setor</th>
-              <th>Observação / Documento</th>
+              <th class="no-print-col">Operador</th>
+              <th class="no-print-col">Observação</th>
             </tr>
           </thead>
           <tbody>
-            @for (mov of movimentacoesPaginadas(); track mov.id) {
+            @for (mov of movimentacoesExibidas(); track mov.id) {
               <tr>
-                <!-- Data e Hora -->
+                <!-- Mês e Data de Realização -->
                 <td class="col-date">
-                  <span class="date-text">{{ formatarDataHora(mov.createdAt) }}</span>
+                  <div class="month-cell font-bold">{{ obterMesAno(mov.createdAt) }}</div>
+                  <div class="date-sub">{{ formatarDataHora(mov.createdAt) }}</div>
                 </td>
 
-                <!-- Tipo / Operação -->
-                <td class="col-type">
+                <!-- Tipo / Operação (Visível na tela) -->
+                <td class="col-type no-print-col">
                   @if (mov.type === 'ENTRY') {
                     <span class="badge-type badge-entry">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
@@ -291,46 +304,53 @@
                   }
                 </td>
 
-                <!-- Produto -->
+                <!-- Setor Destinado -->
+                <td class="col-sector">
+                  <span class="sector-dest-badge font-semibold" [class.is-entry]="mov.type === 'ENTRY'">
+                    {{ obterSetorDestinado(mov) }}
+                  </span>
+                </td>
+
+                <!-- Qual item foi (Nome do Produto) -->
                 <td class="col-product">
-                  <div class="product-name">{{ mov.product?.name || 'Item não especificado' }}</div>
-                  <div class="product-meta">
-                    <span class="product-cat">{{ mov.product?.category || 'Geral' }}</span>
-                    <span class="product-divider">•</span>
-                    <span class="product-unit">{{ mov.product?.measurement || 'UN' }}</span>
-                  </div>
+                  <span class="product-name font-semibold">{{ mov.product?.name || 'Item não especificado' }}</span>
+                </td>
+
+                <!-- Categoria -->
+                <td class="col-category">
+                  <span class="cat-pill">{{ mov.product?.category || 'Geral' }}</span>
+                </td>
+
+                <!-- Tipo de Medida -->
+                <td class="col-measure">
+                  <span class="measure-pill">{{ mov.product?.measurement || 'UN' }}</span>
                 </td>
 
                 <!-- Quantidade -->
                 <td class="col-qty text-right font-semibold">
-                  {{ mov.quantity }} {{ mov.product?.measurement || 'UN' }}
+                  {{ mov.quantity }}
                 </td>
 
-                <!-- Valor Unitário dos Itens -->
+                <!-- Valor Unitário -->
                 <td class="col-unit-price text-right font-mono">
                   {{ formatarMoeda(obterValorUnitario(mov)) }}
                 </td>
 
-                <!-- Valor Total Gasto / Transacionado -->
+                <!-- Valor Total -->
                 <td class="col-total-price text-right font-mono font-bold" [class.text-danger]="mov.type === 'EXIT'" [class.text-success]="mov.type === 'ENTRY'">
                   {{ formatarMoeda(obterValorTotal(mov)) }}
                 </td>
 
-                <!-- Operador / Usuário que realizou a movimentação -->
-                <td class="col-user">
+                <!-- Operador (oculto no print) -->
+                <td class="col-user no-print-col">
                   <span class="user-badge" [title]="mov.user?.email || 'Sistema'">
                     <span class="user-avatar-mini">{{ (mov.user?.name || 'S')[0].toUpperCase() }}</span>
                     <span>{{ mov.user?.name || 'Sistema' }}</span>
                   </span>
                 </td>
 
-                <!-- Solicitante -->
-                <td class="col-requester">
-                  {{ mov.requester || '-' }}
-                </td>
-
-                <!-- Descrição / Observação -->
-                <td class="col-desc">
+                <!-- Observação / Solicitante secundário (oculto no print) -->
+                <td class="col-desc no-print-col">
                   <span class="desc-text" [title]="mov.description || ''">
                     {{ mov.description || '-' }}
                   </span>
@@ -340,13 +360,13 @@
           </tbody>
           <tfoot>
             <tr class="table-total-row">
-              <td colspan="3" class="font-bold">Totalizadores do Período Filtrado:</td>
-              <td class="text-right font-bold">{{ resumo()?.totalItemsQuantity || 0 }} itens</td>
+              <td colspan="6" class="font-bold">Totalizadores do Período Filtrado:</td>
+              <td class="text-right font-bold">{{ resumo()?.totalItemsQuantity || 0 }}</td>
               <td class="text-right text-muted">-</td>
               <td class="text-right font-bold font-mono">
-                Gasto (Saídas): {{ formatarMoeda(resumo()?.totalSpent) }}
+                Saídas: {{ formatarMoeda(resumo()?.totalSpent) }}
               </td>
-              <td colspan="3" class="text-muted">
+              <td colspan="2" class="text-muted no-print-col">
                 Entradas: {{ formatarMoeda(resumo()?.totalEntriesValue) }}
               </td>
             </tr>

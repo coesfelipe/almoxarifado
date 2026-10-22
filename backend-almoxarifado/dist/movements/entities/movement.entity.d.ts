@@ -10,6 +10,7 @@ export declare class Movement {
     quantity: number;
     unitPrice?: number;
     totalPrice?: number;
+    sector?: string;
     requester?: string;
     description?: string;
     createdAt: Date;

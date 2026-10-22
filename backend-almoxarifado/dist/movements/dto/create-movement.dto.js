@@ -13,6 +13,7 @@ export class CreateMovementDto {
     type;
     quantity;
     unitPrice;
+    sector;
     requester;
     description;
     userId;
@@ -33,6 +34,11 @@ __decorate([
     IsOptional(),
     __metadata("design:type", Number)
 ], CreateMovementDto.prototype, "unitPrice", void 0);
+__decorate([
+    IsString({ message: 'O campo setor deve ser uma string' }),
+    IsOptional(),
+    __metadata("design:type", String)
+], CreateMovementDto.prototype, "sector", void 0);
 __decorate([
     IsString({ message: 'O campo solicitante deve ser uma string' }),
     IsOptional(),

@@ -56,6 +56,13 @@ export class FilterMovementReportDto {
   productId?: number;
 
   /**
+   * Filtro opcional por setor de destino.
+   */
+  @IsOptional()
+  @IsString({ message: 'O setor deve ser texto' })
+  sector?: string;
+
+  /**
    * Filtro opcional por solicitante ou setor destinatário.
    */
   @IsOptional()

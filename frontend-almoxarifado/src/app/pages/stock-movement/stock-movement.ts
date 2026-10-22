@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angu
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, Product } from '../../services/stock';
 import { MovementService, Movement, MovementType } from '../../services/movement';
+import { SectorService, Sector } from '../../services/sector';
 import { Footer } from '../../components/footer/footer';
 
 @Component({
@@ -17,9 +18,11 @@ export class StockMovement implements OnInit {
   private fb = inject(FormBuilder);
   private stockService = inject(StockService);
   private movementService = inject(MovementService);
+  private sectorService = inject(SectorService);
   private platformId = inject(PLATFORM_ID);
 
   produtos = signal<Product[]>([]);
+  setores = signal<Sector[]>([]);
   historico = signal<Movement[]>([]);
   carregando = signal<boolean>(true);
   salvando = signal<boolean>(false);
@@ -34,6 +37,7 @@ export class StockMovement implements OnInit {
   // Filtros de Pesquisa
   buscaNome = signal<string>('');
   filtroTipo = signal<string>('');
+  filtroSetor = signal<string>('');
   dataInicio = signal<string>('');
   dataFim = signal<string>('');
 
@@ -45,6 +49,7 @@ export class StockMovement implements OnInit {
     productId: [null as number | null, [Validators.required]],
     type: ['ENTRY' as MovementType, [Validators.required]],
     quantity: [1, [Validators.required, Validators.min(1)]],
+    sector: [{ value: '', disabled: true }],
     requester: [{ value: '', disabled: true }],
     description: [''],
   });
@@ -87,6 +92,11 @@ export class StockMovement implements OnInit {
 
   carregarDados(): void {
     this.carregando.set(true);
+    this.sectorService.getSectors().subscribe({
+      next: (sec) => this.setores.set(sec),
+      error: (err) => console.error('Erro ao carregar setores:', err),
+    });
+
     this.stockService.getProducts().subscribe({
       next: (prods) => {
         this.produtos.set(prods);
@@ -108,6 +118,7 @@ export class StockMovement implements OnInit {
       .searchMovements({
         productName: this.buscaNome() || undefined,
         type: this.filtroTipo() || undefined,
+        sector: this.filtroSetor() || undefined,
         startDate: this.dataInicio() || undefined,
         endDate: this.dataFim() || undefined,
       })
@@ -126,6 +137,7 @@ export class StockMovement implements OnInit {
   limparFiltros(): void {
     this.buscaNome.set('');
     this.filtroTipo.set('');
+    this.filtroSetor.set('');
     this.dataInicio.set('');
     this.dataFim.set('');
     this.pesquisar();
@@ -172,13 +184,18 @@ export class StockMovement implements OnInit {
     this.tipo.set(tipo);
     this.form.patchValue({ type: tipo });
 
-    // Em Entradas, o solicitante não é aplicável e fica desabilitado
+    // Em Entradas, setor e solicitante não são aplicáveis e ficam desabilitados
     if (tipo === 'ENTRY') {
+      this.form.get('sector')?.disable();
+      this.form.get('sector')?.clearValidators();
       this.form.get('requester')?.disable();
-      this.form.patchValue({ requester: '' });
+      this.form.patchValue({ sector: '', requester: '' });
     } else {
+      this.form.get('sector')?.enable();
+      this.form.get('sector')?.setValidators([Validators.required]);
       this.form.get('requester')?.enable();
     }
+    this.form.get('sector')?.updateValueAndValidity();
 
     // Se mudou para Saída e o produto escolhido está sem estoque, limpa a seleção
     const prod = this.produtoSelecionado();
@@ -209,14 +226,16 @@ export class StockMovement implements OnInit {
 
     const currentUserId = Number(localStorage.getItem('userId')) || 1;
 
-    // Se a operação for de ENTRADA, o solicitante é explicitamente desconsiderado (undefined)
-    const solicitante = values.type === 'EXIT' ? (values.requester?.trim() || undefined) : undefined;
+    // Se a operação for de SAÍDA, captura o setor de destino e solicitante
+    const setorDestino = values.type === 'EXIT' ? (values.sector?.trim() || undefined) : undefined;
+    const solicitante = values.type === 'EXIT' ? (values.requester?.trim() || values.sector?.trim() || undefined) : undefined;
 
     this.movementService
       .createMovement({
         productId: values.productId!,
         type: values.type,
         quantity: values.quantity,
+        sector: setorDestino,
         requester: solicitante,
         description: values.description || undefined,
         userId: currentUserId,
@@ -227,8 +246,9 @@ export class StockMovement implements OnInit {
             `Movimentação de ${values.type === 'ENTRY' ? 'Entrada' : 'Saída'} registrada com sucesso!`
           );
           this.salvando.set(false);
-          this.form.patchValue({ quantity: 1, requester: '', description: '' });
+          this.form.patchValue({ quantity: 1, sector: '', requester: '', description: '' });
           if (this.tipo() === 'ENTRY') {
+            this.form.get('sector')?.disable();
             this.form.get('requester')?.disable();
           }
           this.limparProduto();

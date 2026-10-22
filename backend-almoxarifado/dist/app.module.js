@@ -13,6 +13,10 @@ import { AuthModule } from './auth/auth.module.js';
 import { User } from './users/entities/user.entity.js';
 import { Product } from './products/entities/product.entity.js';
 import { Movement } from './movements/entities/movement.entity.js';
+import { Category } from './categories/entities/category.entity.js';
+import { CategoriesModule } from './categories/categories.module.js';
+import { Sector } from './sectors/entities/sector.entity.js';
+import { SectorsModule } from './sectors/sectors.module.js';
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -21,13 +25,15 @@ AppModule = __decorate([
             TypeOrmModule.forRoot({
                 type: 'better-sqlite3',
                 database: 'database.sqlite',
-                entities: [User, Product, Movement],
+                entities: [User, Product, Movement, Category, Sector],
                 synchronize: true,
             }),
             AuthModule,
             UsersModule,
             ProductsModule,
             MovementsModule,
+            CategoriesModule,
+            SectorsModule,
         ],
     })
 ], AppModule);

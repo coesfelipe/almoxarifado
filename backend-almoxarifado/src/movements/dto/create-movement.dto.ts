@@ -31,6 +31,13 @@ export class CreateMovementDto {
   unitPrice?: number;
 
   /**
+   * Setor institucional de destino (ex: Manutenção, SEADI, Recepção, etc.).
+   */
+  @IsString({ message: 'O campo setor deve ser uma string' })
+  @IsOptional()
+  sector?: string;
+
+  /**
    * Nome do solicitante, departamento ou destinatário responsável pelo recebimento ou retirada.
    */
   @IsString({ message: 'O campo solicitante deve ser uma string' })

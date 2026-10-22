@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Navbar } from '../../components/navbar/navbar';
 import { StockService, Product } from '../../services/stock';
+import { CategoryService, Category } from '../../services/category';
 import { Footer } from '../../components/footer/footer';
 
 @Component({
@@ -16,11 +17,13 @@ import { Footer } from '../../components/footer/footer';
 export class EditProduct implements OnInit {
   private fb = inject(FormBuilder);
   private stockService = inject(StockService);
+  private categoryService = inject(CategoryService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   productId = signal<number | null>(null);
   produto = signal<Product | null>(null);
+  categorias = signal<Category[]>([]);
   carregando = signal<boolean>(true);
   salvando = signal<boolean>(false);
   erro = signal<string | null>(null);
@@ -34,6 +37,7 @@ export class EditProduct implements OnInit {
   });
 
   ngOnInit(): void {
+    this.carregarCategorias();
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       const id = Number(idParam);
@@ -43,6 +47,13 @@ export class EditProduct implements OnInit {
       this.erro.set('ID do produto não informado.');
       this.carregando.set(false);
     }
+  }
+
+  private carregarCategorias(): void {
+    this.categoryService.getCategories().subscribe({
+      next: (cats) => this.categorias.set(cats),
+      error: (err) => console.error('Erro ao carregar categorias:', err),
+    });
   }
 
   carregarProduto(id: number): void {

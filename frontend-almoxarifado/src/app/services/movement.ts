@@ -34,6 +34,8 @@ export interface Movement {
   unitPrice?: number;
   /** Valor financeiro total da transação (quantity * unitPrice) em R$ */
   totalPrice?: number;
+  /** Setor institucional de destino */
+  sector?: string;
   /** Pessoa, setor ou departamento solicitante */
   requester?: string;
   /** Observações, justificativas ou referência de documento fiscal */
@@ -57,6 +59,7 @@ export interface CreateMovementPayload {
   type: MovementType;
   quantity: number;
   unitPrice?: number;
+  sector?: string;
   requester?: string;
   description?: string;
   userId: number;
@@ -71,6 +74,7 @@ export interface MovementSearchFilter {
   type?: string;
   startDate?: string;
   endDate?: string;
+  sector?: string;
   requester?: string;
 }
 
@@ -131,6 +135,7 @@ export class MovementService {
     if (filters.type) params = params.set('type', filters.type);
     if (filters.startDate) params = params.set('startDate', filters.startDate);
     if (filters.endDate) params = params.set('endDate', filters.endDate);
+    if (filters.sector) params = params.set('sector', filters.sector.trim());
     if (filters.requester) params = params.set('requester', filters.requester.trim());
 
     return this.http.get<Movement[]>(`${this.apiUrl}/search`, { params });
@@ -150,6 +155,7 @@ export class MovementService {
     if (filters.endDate) params = params.set('endDate', filters.endDate);
     if (filters.type) params = params.set('type', filters.type);
     if (filters.productName) params = params.set('productName', filters.productName.trim());
+    if (filters.sector) params = params.set('sector', filters.sector.trim());
     if (filters.requester) params = params.set('requester', filters.requester.trim());
 
     return this.http.get<MovementReportResponse>(`${this.apiUrl}/report`, { params });

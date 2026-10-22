@@ -29,9 +29,11 @@
       <ul>
         <li><a routerLink="/stock/create">Cadastrar Novo Produto</a></li>
         <li><a routerLink="/stock/create/xml">Importar NF-e (XML)</a></li>
-        <li><a routerLink="/config">Configurações de Acesso</a></li>
+        <li><a routerLink="/config" [queryParams]="{ tab: 'sectors' }">Gestão de Setores</a></li>
+        <li><a routerLink="/config" [queryParams]="{ tab: 'categories' }">Gestão de Categorias</a></li>
+        <li><a routerLink="/config" [queryParams]="{ tab: 'account' }">Configurações de Conta</a></li>
         @if (isAdmin) {
-          <li><a routerLink="/users">Gestão de Usuários (ADM)</a></li>
+          <li><a routerLink="/config" [queryParams]="{ tab: 'users' }">Gestão de Usuários (ADM)</a></li>
         }
       </ul>
     </div>

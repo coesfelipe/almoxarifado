@@ -3,6 +3,7 @@ export declare class CreateMovementDto {
     type: MovementType;
     quantity: number;
     unitPrice?: number;
+    sector?: string;
     requester?: string;
     description?: string;
     userId?: number;

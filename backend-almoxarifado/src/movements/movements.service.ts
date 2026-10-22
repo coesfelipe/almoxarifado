@@ -129,7 +129,8 @@ export class MovementsService {
         quantity: dto.quantity,
         unitPrice,
         totalPrice,
-        requester: dto.type === MovementType.EXIT ? (dto.requester?.trim() || undefined) : undefined,
+        sector: dto.type === MovementType.EXIT ? (dto.sector?.trim() || dto.requester?.trim() || undefined) : undefined,
+        requester: dto.type === MovementType.EXIT ? (dto.requester?.trim() || dto.sector?.trim() || undefined) : undefined,
         description: dto.description?.trim() || undefined,
         userId: user.id,
         productId: product.id,
@@ -252,6 +253,14 @@ export class MovementsService {
     // Filtro por ID do produto
     if (filters.productId) {
       query.andWhere('product.id = :productId', { productId: filters.productId });
+    }
+
+    // Filtro por setor
+    if (filters.sector) {
+      query.andWhere(
+        '(LOWER(movement.sector) LIKE LOWER(:sector) OR LOWER(movement.requester) LIKE LOWER(:sector))',
+        { sector: `%${filters.sector.trim()}%` },
+      );
     }
 
     // Filtro por solicitante

@@ -52,13 +52,9 @@
           [class.is-invalid]="campoInvalido('category')"
         >
           <option value="" disabled selected>Selecione uma categoria...</option>
-          <option value="Construcao">Construção</option>
-          <option value="Descartavel e limpeza">Descartável e Limpeza</option>
-          <option value="Eletrica">Elétrica</option>
-          <option value="Escritorio">Escritório</option>
-          <option value="Hidraulica">Hidráulica</option>
-          <option value="Saude">Saúde</option>
-          <option value="Outros">Outros</option>
+          @for (cat of categorias(); track cat.id) {
+            <option [value]="cat.name">{{ cat.name }}</option>
+          }
         </select>
         @if (campoInvalido('category')) {
           <div class="invalid-feedback">A categoria é obrigatória.</div>

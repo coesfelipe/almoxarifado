@@ -105,8 +105,30 @@
         </div>
 
         <div class="form-group" [class.field-disabled]="tipo() === 'ENTRY'">
+          <label for="sector" class="form-label" [class.text-muted]="tipo() === 'ENTRY'">
+            Setor de Destino *
+            @if (tipo() === 'ENTRY') {
+              <span class="badge-disabled-note">(Não aplicável em Entrada)</span>
+            }
+          </label>
+          <select
+            id="sector"
+            formControlName="sector"
+            class="form-control"
+            [disabled]="tipo() === 'ENTRY'">
+            <option value="" disabled selected>Selecione o setor destinatário...</option>
+            @for (s of setores(); track s.id) {
+              <option [value]="s.name">{{ s.name }}</option>
+            }
+          </select>
+          @if (tipo() === 'EXIT') {
+            <p class="field-hint">Setor para o qual o item está sendo destinado.</p>
+          }
+        </div>
+
+        <div class="form-group" [class.field-disabled]="tipo() === 'ENTRY'">
           <label for="requester" class="form-label" [class.text-muted]="tipo() === 'ENTRY'">
-            Solicitante / Requisitante
+            Solicitante / Responsável
             @if (tipo() === 'ENTRY') {
               <span class="badge-disabled-note">(Não aplicável em Entrada)</span>
             }
@@ -116,9 +138,9 @@
             id="requester"
             formControlName="requester"
             class="form-control"
-            [placeholder]="tipo() === 'ENTRY' ? 'Indisponível: Entradas não possuem solicitante' : 'Ex: João da Silva (Setor de TI)'" />
-          @if (tipo() === 'ENTRY') {
-            <p class="field-hint">O campo solicitante fica disponível apenas para operações de Saída.</p>
+            [placeholder]="tipo() === 'ENTRY' ? 'Indisponível: Entradas não possuem solicitante' : 'Ex: João da Silva'" />
+          @if (tipo() === 'EXIT') {
+            <p class="field-hint">Nome da pessoa que retirou o item (opcional).</p>
           }
         </div>
       </div>
@@ -166,6 +188,19 @@
           <option value="">Todos os tipos</option>
           <option value="ENTRY">Apenas Entradas</option>
           <option value="EXIT">Apenas Saídas</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Filtrar por Setor</label>
+        <select
+          class="form-control"
+          [ngModel]="filtroSetor()"
+          (ngModelChange)="filtroSetor.set($event); pesquisar()">
+          <option value="">Todos os setores</option>
+          @for (s of setores(); track s.id) {
+            <option [value]="s.name">{{ s.name }}</option>
+          }
         </select>
       </div>
     </div>
@@ -219,7 +254,7 @@
             <th>Tipo</th>
             <th class="num">Qtd.</th>
             <th>Operador</th>
-            <th>Solicitante</th>
+            <th>Setor Destinado / Solicitante</th>
             <th>Descrição</th>
           </tr>
         </thead>
@@ -247,7 +282,16 @@
                     <span>{{ m.user?.name || 'Sistema' }}</span>
                   </span>
                 </td>
-                <td>{{ m.requester || '-' }}</td>
+                <td>
+                  @if (m.type === 'EXIT') {
+                    <span class="font-medium text-dark">{{ m.sector || m.requester || '-' }}</span>
+                    @if (m.sector && m.requester && m.sector !== m.requester) {
+                      <small class="text-muted d-block">({{ m.requester }})</small>
+                    }
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
                 <td>{{ m.description || '-' }}</td>
               </tr>
             } @empty {

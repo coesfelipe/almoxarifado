@@ -58,6 +58,13 @@ export class Movement {
   totalPrice?: number;
 
   /**
+   * Setor institucional de destino para saídas de materiais.
+   * Exemplo: 'Elétrica', 'Manutenção', 'Audiovisual', etc.
+   */
+  @Column({ type: 'text', nullable: true })
+  sector?: string;
+
+  /**
    * Identificação da pessoa, departamento ou setor solicitante da movimentação.
    * Exemplo: 'Departamento de TI', 'Setor de Manutenção', 'João da Silva'.
    */

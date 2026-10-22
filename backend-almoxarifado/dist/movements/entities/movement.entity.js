@@ -19,6 +19,7 @@ let Movement = class Movement {
     quantity;
     unitPrice;
     totalPrice;
+    sector;
     requester;
     description;
     createdAt;
@@ -51,6 +52,10 @@ __decorate([
     Column('decimal', { precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Movement.prototype, "totalPrice", void 0);
+__decorate([
+    Column({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Movement.prototype, "sector", void 0);
 __decorate([
     Column({ type: 'text', nullable: true }),
     __metadata("design:type", String)

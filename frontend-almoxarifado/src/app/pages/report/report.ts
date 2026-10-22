@@ -250,15 +250,71 @@ export class Report implements OnInit {
     return Number((mov.quantity * this.obterValorUnitario(mov)).toFixed(2));
   }
 
+  /**
+   * Retorna o mês e ano por extenso em que a movimentação foi realizada (ex: "Outubro/2026").
+   */
+  obterMesAno(dataString: string | undefined): string {
+    if (!dataString) return '-';
+    try {
+      const data = new Date(dataString);
+      const mes = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      return mes.charAt(0).toUpperCase() + mes.slice(1);
+    } catch {
+      return '-';
+    }
+  }
+
+  /**
+   * Identifica o setor de destino da movimentação (prioriza sector, fallback para requester em saídas).
+   */
+  obterSetorDestinado(mov: Movement): string {
+    if (mov.type === 'ENTRY') {
+      return 'Almoxarifado (Entrada)';
+    }
+    return mov.sector || mov.requester || 'Não informado';
+  }
+
+  /**
+   * Retorna o texto formatado do mês/período de referência para o cabeçalho do relatório e impressão.
+   */
+  mesReferenciaTexto = computed(() => {
+    const inicioStr = this.dataInicio();
+    const fimStr = this.dataFim();
+
+    if (inicioStr && fimStr) {
+      const inicio = new Date(inicioStr + 'T00:00:00');
+      const fim = new Date(fimStr + 'T23:59:59');
+      if (inicio.getMonth() === fim.getMonth() && inicio.getFullYear() === fim.getFullYear()) {
+        const mesExtenso = inicio.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        return mesExtenso.charAt(0).toUpperCase() + mesExtenso.slice(1);
+      }
+      return `${inicio.toLocaleDateString('pt-BR')} até ${fim.toLocaleDateString('pt-BR')}`;
+    }
+
+    const agora = new Date();
+    const mesAtual = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return mesAtual.charAt(0).toUpperCase() + mesAtual.slice(1);
+  });
+
+  /**
+   * Data e hora atual formatada para exibição na emissão da impressão.
+   */
+  get dataHojeFormatada(): string {
+    return new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   // --- Recursos de Exportação e Auditoria ---
 
-  // 1. Adicione a variável de estado reativa 'imprimindo'
   imprimindo = signal<boolean>(false);
 
-  // 2. Crie uma propriedade computada para determinar quais movimentações exibir no HTML
   movimentacoesExibidas = computed(() => {
-    // Se estiver a imprimir, devolve TODAS as movimentações de uma só vez.
-    // Caso contrário, devolve apenas as movimentações da página atual.
+    // Se estiver imprimindo, devolve TODAS as movimentações de uma só vez para sair no PDF/impressão
     return this.imprimindo() ? this.movimentacoes() : this.movimentacoesPaginadas();
   });
 
@@ -267,13 +323,10 @@ export class Report implements OnInit {
    */
   imprimirRelatorio(): void {
     if (isPlatformBrowser(this.platformId)) {
-      // Ativa o modo de impressão para renderizar TODOS os registros
       this.imprimindo.set(true);
 
-      // Aguarda o Angular atualizar o DOM com todas as linhas
       setTimeout(() => {
         window.print();
-        // Restaura a visão paginada após a janela de impressão ser fechada
         this.imprimindo.set(false);
       }, 300);
     }
@@ -293,11 +346,13 @@ export class Report implements OnInit {
     }
 
     const colunas = [
+      'Mês de Realização',
       'Data/Hora',
-      'Tipo',
-      'Produto',
+      'Tipo de Operação',
+      'Setor Destinado',
+      'Item (Produto)',
       'Categoria',
-      'Unidade',
+      'Tipo de Medida',
       'Quantidade',
       'Valor Unitário (R$)',
       'Valor Total (R$)',
@@ -307,10 +362,12 @@ export class Report implements OnInit {
     ];
 
     const linhas = lista.map((m) => {
+      const mesStr = `"${this.obterMesAno(m.createdAt)}"`;
       const unit = this.obterValorUnitario(m).toFixed(2).replace('.', ',');
       const total = this.obterValorTotal(m).toFixed(2).replace('.', ',');
       const tipoStr = m.type === 'ENTRY' ? 'Entrada' : 'Saída';
       const dataStr = this.formatarDataHora(m.createdAt);
+      const setorDest = `"${this.obterSetorDestinado(m).replace(/"/g, '""')}"`;
       const prodNome = `"${(m.product?.name || '').replace(/"/g, '""')}"`;
       const prodCat = `"${(m.product?.category || 'Geral').replace(/"/g, '""')}"`;
       const prodUn = m.product?.measurement || 'UN';
@@ -319,8 +376,10 @@ export class Report implements OnInit {
       const desc = `"${(m.description || '').replace(/"/g, '""')}"`;
 
       return [
+        mesStr,
         `"${dataStr}"`,
         tipoStr,
+        setorDest,
         prodNome,
         prodCat,
         prodUn,

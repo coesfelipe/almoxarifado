@@ -1,81 +1,685 @@
 <app-navbar></app-navbar>
 
-<div class="config-container">
-  <h2>Configurações da Conta</h2>
-
-  <!-- Alterar E-mail -->
-  <section class="config-card">
-    <h3>Alterar E-mail</h3>
-
-    <div *ngIf="emailSuccessMessage" class="alert success">{{ emailSuccessMessage }}</div>
-    <div *ngIf="emailErrorMessage" class="alert error">{{ emailErrorMessage }}</div>
-
-    <form [formGroup]="emailForm" (ngSubmit)="onChangeEmail()">
-      <div class="form-group">
-        <label for="newEmail">Novo E-mail</label>
-        <input id="newEmail" type="email" formControlName="newEmail" placeholder="seu@email.com" />
-        <small *ngIf="emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('required')">
-          E-mail é obrigatório.
-        </small>
-        <small *ngIf="emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('email')">
-          Insira um e-mail válido.
-        </small>
+<div class="config-page">
+  <div class="config-container">
+    <div class="config-header">
+      <div>
+        <h2>Configurações do Almoxarifado</h2>
+        <p class="config-subtitle">
+          Gerencie os setores da instituição, categorias de produtos, controle de contas e acesso.
+        </p>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label for="emailPassword">Senha Atual (para confirmar)</label>
-        <input id="emailPassword" type="password" formControlName="passwordPlain" placeholder="Sua senha atual" />
-        <small *ngIf="emailForm.get('passwordPlain')?.touched && emailForm.get('passwordPlain')?.hasError('required')">
-          Sua senha é necessária para confirmar a alteração.
-        </small>
-      </div>
-
-      <button type="submit" [disabled]="loadingEmail || emailForm.invalid">
-        {{ loadingEmail ? 'Salvando...' : 'Atualizar E-mail' }}
+    <!-- Navegação por Abas -->
+    <nav class="config-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'sectors'"
+        (click)="activeTab.set('sectors')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Setores</span>
+        <span class="tab-count">{{ setores().length }}</span>
       </button>
-    </form>
-  </section>
 
-  <!-- Alterar Senha -->
-  <section class="config-card">
-    <h3>Alterar Senha</h3>
-
-    <div *ngIf="passwordSuccessMessage" class="alert success">{{ passwordSuccessMessage }}</div>
-    <div *ngIf="passwordErrorMessage" class="alert error">{{ passwordErrorMessage }}</div>
-
-    <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
-      <div class="form-group">
-        <label for="currentPassword">Senha Atual</label>
-        <input id="currentPassword" type="password" formControlName="currentPassword" />
-        <small *ngIf="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required')">
-          Senha atual é obrigatória.
-        </small>
-      </div>
-
-      <div class="form-group">
-        <label for="newPassword">Nova Senha</label>
-        <input id="newPassword" type="password" formControlName="newPassword" />
-        <small *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required')">
-          Nova senha é obrigatória.
-        </small>
-        <small *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength')">
-          A senha deve ter no mínimo 6 caracteres.
-        </small>
-      </div>
-
-      <div class="form-group">
-        <label for="confirmPassword">Confirmar Nova Senha</label>
-        <input id="confirmPassword" type="password" formControlName="confirmPassword" />
-        <small *ngIf="passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched">
-          As senhas não coincidem.
-        </small>
-      </div>
-
-      <button type="submit" [disabled]="loadingPassword || passwordForm.invalid">
-        {{ loadingPassword ? 'Salvando...' : 'Atualizar Senha' }}
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'categories'"
+        (click)="activeTab.set('categories')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        <span>Categorias</span>
+        <span class="tab-count">{{ categorias().length }}</span>
       </button>
-    </form>
-  </section>
+
+      <!-- Aba Restrita: Apenas Usuários com Papel ADMIN -->
+      @if (isAdmin()) {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab() === 'users'"
+          (click)="activeTab.set('users')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Gestão de Usuários (ADM)</span>
+          <span class="tab-count">{{ totalUsuarios() }}</span>
+        </button>
+      }
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'account'"
+        (click)="activeTab.set('account')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Minha Conta</span>
+      </button>
+    </nav>
+
+    <!-- ════════════════ ABA 1: SETORES ════════════════ -->
+    @if (activeTab() === 'sectors') {
+      <div class="tab-content">
+        @if (setorSuccessMessage()) {
+          <div class="alert success">{{ setorSuccessMessage() }}</div>
+        }
+        @if (setorErrorMessage()) {
+          <div class="alert error">{{ setorErrorMessage() }}</div>
+        }
+
+        <div class="config-card full-width">
+          <div class="card-action-bar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar setor..."
+                [ngModel]="buscaSetor()"
+                (ngModelChange)="buscaSetor.set($event)" />
+            </div>
+
+            <button type="button" class="btn-action btn-add" (click)="abrirModalNovoSetor()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Cadastrar Novo Setor</span>
+            </button>
+          </div>
+
+          @if (loadingSetores()) {
+            <div class="loading-state">
+              <p>Carregando setores cadastrados...</p>
+            </div>
+          } @else {
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nome do Setor</th>
+                    <th>Descrição</th>
+                    <th class="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of setoresFiltrados(); track s.id) {
+                    <tr>
+                      <td class="font-semibold">{{ s.name }}</td>
+                      <td class="text-muted">{{ s.description || 'Sem descrição' }}</td>
+                      <td class="text-right actions-cell">
+                        <button
+                          type="button"
+                          class="btn-icon btn-edit"
+                          title="Editar setor"
+                          (click)="abrirModalEditarSetor(s)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-icon btn-delete"
+                          title="Excluir setor"
+                          (click)="excluirSetor(s)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          <span>Excluir</span>
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="empty-cell">Nenhum setor encontrado.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════ ABA 2: CATEGORIAS ════════════════ -->
+    @if (activeTab() === 'categories') {
+      <div class="tab-content">
+        @if (categoriaSuccessMessage()) {
+          <div class="alert success">{{ categoriaSuccessMessage() }}</div>
+        }
+        @if (categoriaErrorMessage()) {
+          <div class="alert error">{{ categoriaErrorMessage() }}</div>
+        }
+
+        <div class="config-card full-width">
+          <div class="card-action-bar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar categoria..."
+                [ngModel]="buscaCategoria()"
+                (ngModelChange)="buscaCategoria.set($event)" />
+            </div>
+
+            <button type="button" class="btn-action btn-add" (click)="abrirModalNovaCategoria()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Cadastrar Nova Categoria</span>
+            </button>
+          </div>
+
+          @if (loadingCategorias()) {
+            <div class="loading-state">
+              <p>Carregando categorias cadastradas...</p>
+            </div>
+          } @else {
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nome da Categoria</th>
+                    <th>Descrição</th>
+                    <th class="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of categoriasFiltradas(); track c.id) {
+                    <tr>
+                      <td class="font-semibold">{{ c.name }}</td>
+                      <td class="text-muted">{{ c.description || 'Sem descrição' }}</td>
+                      <td class="text-right actions-cell">
+                        <button
+                          type="button"
+                          class="btn-icon btn-edit"
+                          title="Editar categoria"
+                          (click)="abrirModalEditarCategoria(c)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-icon btn-delete"
+                          title="Excluir categoria"
+                          (click)="excluirCategoria(c)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          <span>Excluir</span>
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="empty-cell">Nenhuma categoria encontrada.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════ ABA 3: GESTÃO DE USUÁRIOS (ADM) ════════════════ -->
+    @if (isAdmin() && activeTab() === 'users') {
+      <div class="tab-content">
+        @if (usuarioSuccessMessage()) {
+          <div class="alert success">{{ usuarioSuccessMessage() }}</div>
+        }
+        @if (usuarioErrorMessage()) {
+          <div class="alert error">{{ usuarioErrorMessage() }}</div>
+        }
+
+        <!-- Mini KPIs de Contas -->
+        <div class="kpi-mini-grid">
+          <div class="kpi-mini-card">
+            <span class="kpi-mini-num">{{ totalUsuarios() }}</span>
+            <span class="kpi-mini-label">Total de Usuários</span>
+          </div>
+          <div class="kpi-mini-card kpi-admin">
+            <span class="kpi-mini-num">{{ totalAdmins() }}</span>
+            <span class="kpi-mini-label">Administradores</span>
+          </div>
+          <div class="kpi-mini-card kpi-user">
+            <span class="kpi-mini-num">{{ totalOperadores() }}</span>
+            <span class="kpi-mini-label">Operadores (Comuns)</span>
+          </div>
+        </div>
+
+        <div class="config-card full-width">
+          <div class="card-action-bar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar usuário por nome ou e-mail..."
+                [ngModel]="buscaUsuario()"
+                (ngModelChange)="buscaUsuario.set($event)" />
+            </div>
+
+            <button type="button" class="btn-action btn-add" (click)="abrirModalCriarUsuario()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Cadastrar Novo Usuário</span>
+            </button>
+          </div>
+
+          @if (loadingUsuarios()) {
+            <div class="loading-state">
+              <p>Carregando contas de usuários...</p>
+            </div>
+          } @else {
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Papel (Role)</th>
+                    <th class="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (u of usuariosFiltrados(); track u.id) {
+                    <tr>
+                      <td class="font-mono text-muted">#{{ u.id }}</td>
+                      <td class="font-semibold">{{ u.name }}</td>
+                      <td>{{ u.email }}</td>
+                      <td>
+                        @if (u.role === 'ADMIN') {
+                          <span class="role-pill role-admin">Administrador</span>
+                        } @else {
+                          <span class="role-pill role-user">Usuário Operador</span>
+                        }
+                      </td>
+                      <td class="text-right actions-cell">
+                        <button
+                          type="button"
+                          class="btn-icon btn-edit"
+                          title="Editar permissão ou dados do usuário"
+                          (click)="abrirModalEditarUsuario(u)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-icon btn-delete"
+                          [disabled]="currentUserId() === u.id"
+                          title="{{ currentUserId() === u.id ? 'Não é possível excluir sua própria conta conectada' : 'Excluir usuário' }}"
+                          (click)="excluirUsuario(u)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          <span>Excluir</span>
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="empty-cell">Nenhum usuário encontrado.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════ ABA 4: MINHA CONTA ════════════════ -->
+    @if (activeTab() === 'account') {
+      <div class="tab-content account-grid">
+        <!-- Alterar E-mail -->
+        <section class="config-card">
+          <h3>Alterar E-mail</h3>
+
+          @if (emailSuccessMessage) {
+            <div class="alert success">{{ emailSuccessMessage }}</div>
+          }
+          @if (emailErrorMessage) {
+            <div class="alert error">{{ emailErrorMessage }}</div>
+          }
+
+          <form [formGroup]="emailForm" (ngSubmit)="onChangeEmail()">
+            <div class="form-group">
+              <label for="newEmail">Novo E-mail</label>
+              <input id="newEmail" type="email" formControlName="newEmail" placeholder="seu@email.com" />
+              @if (emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('required')) {
+                <small>E-mail é obrigatório.</small>
+              }
+              @if (emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('email')) {
+                <small>Insira um e-mail válido.</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="emailPassword">Senha Atual (para confirmar)</label>
+              <input id="emailPassword" type="password" formControlName="passwordPlain" placeholder="Sua senha atual" />
+              @if (emailForm.get('passwordPlain')?.touched && emailForm.get('passwordPlain')?.hasError('required')) {
+                <small>Sua senha é necessária para confirmar a alteração.</small>
+              }
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="loadingEmail || emailForm.invalid">
+              {{ loadingEmail ? 'Salvando...' : 'Atualizar E-mail' }}
+            </button>
+          </form>
+        </section>
+
+        <!-- Alterar Senha -->
+        <section class="config-card">
+          <h3>Alterar Senha</h3>
+
+          @if (passwordSuccessMessage) {
+            <div class="alert success">{{ passwordSuccessMessage }}</div>
+          }
+          @if (passwordErrorMessage) {
+            <div class="alert error">{{ passwordErrorMessage }}</div>
+          }
+
+          <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
+            <div class="form-group">
+              <label for="currentPassword">Senha Atual</label>
+              <input id="currentPassword" type="password" formControlName="currentPassword" />
+              @if (passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required')) {
+                <small>Senha atual é obrigatória.</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="newPassword">Nova Senha</label>
+              <input id="newPassword" type="password" formControlName="newPassword" />
+              @if (passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required')) {
+                <small>Nova senha é obrigatória.</small>
+              }
+              @if (passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength')) {
+                <small>A senha deve ter no mínimo 6 caracteres.</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword">Confirmar Nova Senha</label>
+              <input id="confirmPassword" type="password" formControlName="confirmPassword" />
+              @if (passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched) {
+                <small>As senhas não coincidem.</small>
+              }
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="loadingPassword || passwordForm.invalid">
+              {{ loadingPassword ? 'Salvando...' : 'Atualizar Senha' }}
+            </button>
+          </form>
+        </section>
+      </div>
+    }
+  </div>
 </div>
+
+<!-- ════════════════ MODAIS SETOR ════════════════ -->
+@if (modalSetorAberto()) {
+  <div class="modal-backdrop" (click)="fecharModalSetor()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ setorEmEdicao() ? 'Editar Setor' : 'Cadastrar Novo Setor' }}</h3>
+        <button type="button" class="btn-close" (click)="fecharModalSetor()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        @if (setorErrorMessage()) {
+          <div class="alert error">{{ setorErrorMessage() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="modalNomeSetor">Nome do Setor *</label>
+          <input
+            id="modalNomeSetor"
+            type="text"
+            placeholder="Ex: Laboratório de Robótica, Almoxarifado Central..."
+            [ngModel]="nomeSetor()"
+            (ngModelChange)="nomeSetor.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label for="modalDescricaoSetor">Descrição (opcional)</label>
+          <input
+            id="modalDescricaoSetor"
+            type="text"
+            placeholder="Ex: Responsável por suprimentos técnicos..."
+            [ngModel]="descricaoSetor()"
+            (ngModelChange)="descricaoSetor.set($event)" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="fecharModalSetor()">Cancelar</button>
+        <button
+          type="button"
+          class="btn-save"
+          [disabled]="salvandoSetor() || !nomeSetor().trim()"
+          (click)="salvarSetor()">
+          {{ salvandoSetor() ? 'Salvando...' : (setorEmEdicao() ? 'Salvar Alterações' : 'Cadastrar Setor') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════════════════ MODAIS CATEGORIA ════════════════ -->
+@if (modalCategoriaAberto()) {
+  <div class="modal-backdrop" (click)="fecharModalCategoria()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ categoriaEmEdicao() ? 'Editar Categoria' : 'Cadastrar Nova Categoria' }}</h3>
+        <button type="button" class="btn-close" (click)="fecharModalCategoria()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        @if (categoriaErrorMessage()) {
+          <div class="alert error">{{ categoriaErrorMessage() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="modalNomeCategoria">Nome da Categoria *</label>
+          <input
+            id="modalNomeCategoria"
+            type="text"
+            placeholder="Ex: Ferramentas, Papelaria, Eletrônicos..."
+            [ngModel]="nomeCategoria()"
+            (ngModelChange)="nomeCategoria.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label for="modalDescricaoCategoria">Descrição (opcional)</label>
+          <input
+            id="modalDescricaoCategoria"
+            type="text"
+            placeholder="Ex: Materiais de consumo rápido e escritório..."
+            [ngModel]="descricaoCategoria()"
+            (ngModelChange)="descricaoCategoria.set($event)" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="fecharModalCategoria()">Cancelar</button>
+        <button
+          type="button"
+          class="btn-save"
+          [disabled]="salvandoCategoria() || !nomeCategoria().trim()"
+          (click)="salvarCategoria()">
+          {{ salvandoCategoria() ? 'Salvando...' : (categoriaEmEdicao() ? 'Salvar Alterações' : 'Cadastrar Categoria') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════════════════ MODAL CRIAR USUÁRIO (ADM) ════════════════ -->
+@if (modalCriarUsuarioAberto()) {
+  <div class="modal-backdrop" (click)="fecharModalCriarUsuario()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cadastrar Novo Usuário (ADM)</h3>
+        <button type="button" class="btn-close" (click)="fecharModalCriarUsuario()">&times;</button>
+      </div>
+
+      <form [formGroup]="formCriarUsuario" (ngSubmit)="salvarNovoUsuario()">
+        <div class="modal-body">
+          @if (usuarioErrorMessage()) {
+            <div class="alert error">{{ usuarioErrorMessage() }}</div>
+          }
+
+          <div class="form-group">
+            <label for="createUserName">Nome Completo *</label>
+            <input
+              id="createUserName"
+              type="text"
+              formControlName="name"
+              placeholder="Ex: João da Silva" />
+          </div>
+
+          <div class="form-group">
+            <label for="createUserEmail">E-mail de Acesso *</label>
+            <input
+              id="createUserEmail"
+              type="email"
+              formControlName="email"
+              placeholder="usuario@instituicao.com.br" />
+          </div>
+
+          <div class="form-group">
+            <label for="createUserPassword">Senha Provisória * (mínimo 6 caracteres)</label>
+            <input
+              id="createUserPassword"
+              type="password"
+              formControlName="password"
+              placeholder="••••••••" />
+          </div>
+
+          <div class="form-group">
+            <label for="createUserRole">Nível de Permissão (Role) *</label>
+            <select id="createUserRole" formControlName="role">
+              <option value="USER">Usuário Operador (Movimentações e Consultas)</option>
+              <option value="ADMIN">Administrador (Controle Total do Sistema)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="fecharModalCriarUsuario()">Cancelar</button>
+          <button
+            type="submit"
+            class="btn-save"
+            [disabled]="salvandoUsuario() || formCriarUsuario.invalid">
+            {{ salvandoUsuario() ? 'Salvando...' : 'Cadastrar Usuário' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ════════════════ MODAL EDITAR USUÁRIO (ADM) ════════════════ -->
+@if (modalEditarUsuarioAberto()) {
+  <div class="modal-backdrop" (click)="fecharModalEditarUsuario()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Editar Usuário #{{ usuarioEmEdicao()?.id }}</h3>
+        <button type="button" class="btn-close" (click)="fecharModalEditarUsuario()">&times;</button>
+      </div>
+
+      <form [formGroup]="formEditarUsuario" (ngSubmit)="salvarEdicaoUsuario()">
+        <div class="modal-body">
+          @if (usuarioErrorMessage()) {
+            <div class="alert error">{{ usuarioErrorMessage() }}</div>
+          }
+
+          <div class="form-group">
+            <label for="editUserName">Nome Completo *</label>
+            <input
+              id="editUserName"
+              type="text"
+              formControlName="name" />
+          </div>
+
+          <div class="form-group">
+            <label for="editUserEmail">E-mail *</label>
+            <input
+              id="editUserEmail"
+              type="email"
+              formControlName="email" />
+          </div>
+
+          <div class="form-group">
+            <label for="editUserRole">Nível de Permissão (Role) *</label>
+            <select id="editUserRole" formControlName="role">
+              <option value="USER">Usuário Operador</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editUserPassword">Redefinir Senha (deixe em branco para manter a atual)</label>
+            <input
+              id="editUserPassword"
+              type="password"
+              formControlName="password"
+              placeholder="Digite a nova senha se desejar alterar" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="fecharModalEditarUsuario()">Cancelar</button>
+          <button
+            type="submit"
+            class="btn-save"
+            [disabled]="salvandoUsuario() || formEditarUsuario.invalid">
+            {{ salvandoUsuario() ? 'Salvando...' : 'Salvar Alterações' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 <app-footer></app-footer>
