@@ -1,0 +1,492 @@
+<app-navbar></app-navbar>
+
+<main class="page">
+  <header class="page-header">
+    <div>
+      <h1>Movimentação de Estoque</h1>
+      <p>Registre entradas e saídas de itens do almoxarifado de forma simples e auditável.</p>
+    </div>
+  </header>
+
+  @if (erro()) {
+    <div class="alert-error">
+      <span>{{ erro() }}</span>
+    </div>
+  }
+
+  @if (sucesso()) {
+    <div class="alert-success">
+      <span>{{ sucesso() }}</span>
+    </div>
+  }
+
+  <!-- Formulário de Nova Movimentação -->
+  <section class="card mb-4">
+    <form [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="form-group mb-3">
+        <label class="form-label">Tipo de Movimentação *</label>
+        <div class="type-selector">
+          <button
+            type="button"
+            class="btn-type entry"
+            [class.active]="tipo() === 'ENTRY'"
+            (click)="selecionarTipo('ENTRY')">
+            ↓ Entrada no Estoque
+          </button>
+          <button
+            type="button"
+            class="btn-type exit"
+            [class.active]="tipo() === 'EXIT'"
+            (click)="selecionarTipo('EXIT')">
+            ↑ Saída do Estoque
+          </button>
+        </div>
+      </div>
+
+      <!-- Seletor de produto -->
+      <div class="form-group picker" [class.is-exit]="tipo() === 'EXIT'">
+        <label class="form-label">Produto *</label>
+
+        @if (produtoSelecionado(); as p) {
+          <div class="picker-selected">
+            <div>
+              <div class="picker-selected-name">{{ p.name }}</div>
+              <div class="picker-selected-meta">
+                Saldo atual: {{ p.currentStock }} {{ p.measurement || 'UN' }}
+              </div>
+            </div>
+            <button type="button" class="picker-change" (click)="limparProduto()">Trocar</button>
+          </div>
+        } @else {
+          <input
+            type="search"
+            class="form-control picker-search"
+            placeholder="Digite para buscar o produto..."
+            [ngModel]="buscaProduto()"
+            (ngModelChange)="buscaProduto.set($event)"
+            [ngModelOptions]="{ standalone: true }" />
+
+          <div class="picker-list">
+            @for (p of produtosFiltrados(); track p.id) {
+              <button
+                type="button"
+                class="picker-item"
+                [disabled]="indisponivel(p)"
+                (click)="selecionarProduto(p)">
+                <span class="picker-name">{{ p.name }}</span>
+                <span class="picker-stock" [class.zero]="p.currentStock < 1">
+                  {{ p.currentStock < 1 ? 'Sem saldo' : p.currentStock + ' ' + (p.measurement || 'UN') }}
+                </span>
+              </button>
+            } @empty {
+              <div class="picker-empty">Nenhum produto encontrado.</div>
+            }
+          </div>
+
+          @if (tipo() === 'EXIT') {
+            <p class="picker-note">Produtos sem saldo não podem ter saída.</p>
+          }
+        }
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="quantity" class="form-label">Quantidade *</label>
+          <input
+            type="number"
+            id="quantity"
+            formControlName="quantity"
+            class="form-control"
+            min="1"
+            [attr.max]="tipo() === 'EXIT' && produtoSelecionado() ? produtoSelecionado()!.currentStock : null" />
+          @if (tipo() === 'EXIT' && produtoSelecionado(); as p) {
+            <p class="field-hint">Máximo disponível: {{ p.currentStock }} {{ p.measurement || 'UN' }}</p>
+          }
+        </div>
+
+        <div class="form-group" [class.field-disabled]="tipo() === 'ENTRY'">
+          <label for="sector" class="form-label" [class.text-muted]="tipo() === 'ENTRY'">
+            Setor de Destino *
+            @if (tipo() === 'ENTRY') {
+              <span class="badge-disabled-note">(Não aplicável em Entrada)</span>
+            }
+          </label>
+          <select
+            id="sector"
+            formControlName="sector"
+            class="form-control"
+            [disabled]="tipo() === 'ENTRY'">
+            <option value="" disabled selected>Selecione o setor destinatário...</option>
+            @for (s of setores(); track s.id) {
+              <option [value]="s.name">{{ s.name }}</option>
+            }
+          </select>
+          @if (tipo() === 'EXIT') {
+            <p class="field-hint">Setor para o qual o item está sendo destinado.</p>
+          }
+        </div>
+
+        <div class="form-group" [class.field-disabled]="tipo() === 'ENTRY'">
+          <label for="requester" class="form-label" [class.text-muted]="tipo() === 'ENTRY'">
+            Solicitante / Responsável
+            @if (tipo() === 'ENTRY') {
+              <span class="badge-disabled-note">(Não aplicável em Entrada)</span>
+            }
+          </label>
+          <input
+            type="text"
+            id="requester"
+            formControlName="requester"
+            class="form-control"
+            [placeholder]="tipo() === 'ENTRY' ? 'Indisponível: Entradas não possuem solicitante' : 'Ex: João da Silva'" />
+          @if (tipo() === 'EXIT') {
+            <p class="field-hint">Nome da pessoa que retirou o item (opcional).</p>
+          }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="form-label">Descrição / Observação</label>
+        <input type="text" id="description" formControlName="description" class="form-control" placeholder="Ex: Setor dos laboratórios, Uso Interno..." />
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="submit" class="btn-primary" [disabled]="salvando() || form.invalid">
+          @if (salvando()) {
+            <span>Registrando...</span>
+          } @else {
+            <span>Confirmar Movimentação</span>
+          }
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Painel de Pesquisa e Filtros -->
+  <section class="card mb-4 search-card">
+    <div class="search-header mb-3">
+      <strong>Pesquisar e Filtrar Histórico</strong>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Buscar por movimentação</label>
+        <input
+          type="search"
+          class="form-control"
+          placeholder="Nome da movimentação/produto..."
+          [ngModel]="buscaNome()"
+          (ngModelChange)="buscaNome.set($event); pesquisar()" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select
+          class="form-control"
+          [ngModel]="filtroTipo()"
+          (ngModelChange)="filtroTipo.set($event); pesquisar()">
+          <option value="">Todos os tipos</option>
+          <option value="ENTRY">Apenas Entradas</option>
+          <option value="EXIT">Apenas Saídas</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Filtrar por Setor</label>
+        <select
+          class="form-control"
+          [ngModel]="filtroSetor()"
+          (ngModelChange)="filtroSetor.set($event); pesquisar()">
+          <option value="">Todos os setores</option>
+          @for (s of setores(); track s.id) {
+            <option [value]="s.name">{{ s.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Data Inicial</label>
+        <input
+          type="date"
+          class="form-control"
+          [ngModel]="dataInicio()"
+          (ngModelChange)="dataInicio.set($event); pesquisar()" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Data Final</label>
+        <input
+          type="date"
+          class="form-control"
+          [ngModel]="dataFim()"
+          (ngModelChange)="dataFim.set($event); pesquisar()" />
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-2">
+      <button type="button" class="btn-secondary text-sm" (click)="limparFiltros()">Limpar Filtros</button>
+    </div>
+  </section>
+
+  <!-- Tabela do Histórico com Paginação -->
+  <section class="table-card">
+    <div class="table-header-title d-flex justify-content-between align-items-center">
+      <strong>Histórico de Movimentações ({{ historico().length }})</strong>
+
+      <div class="per-page-selector">
+        <label for="perPage">Exibir:</label>
+        <select id="perPage" class="form-control-sm" (change)="alterarItensPorPagina($event)">
+          <option value="5">5 por pg</option>
+          <option value="10" selected>10 por pg</option>
+          <option value="20">20 por pg</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Produto</th>
+            <th>Tipo</th>
+            <th class="num">Qtd.</th>
+            <th>Operador</th>
+            <th>Setor Destinado / Solicitante</th>
+            <th>Descrição</th>
+            <th class="text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (carregando()) {
+            <tr>
+              <td colspan="8" class="empty">Carregando histórico...</td>
+            </tr>
+          } @else {
+            @for (m of paginados(); track m.id) {
+              <tr>
+                <!-- 1. Data/Hora -->
+                <td>{{ m.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+
+                <!-- 2. Produto -->
+                <td class="name">{{ m.product?.name || '#' + m.productId }}</td>
+
+                <!-- 3. Tipo -->
+                <td>
+                  <span class="badge" [ngClass]="m.type === 'ENTRY' ? 'ok' : 'danger'">
+                    {{ m.type === 'ENTRY' ? 'ENTRADA' : 'SAÍDA' }}
+                  </span>
+                </td>
+
+                <!-- 4. Quantidade -->
+                <td class="num">
+                  <strong>{{ m.type === 'ENTRY' ? '+' : '-' }}{{ m.quantity }}</strong>
+                </td>
+
+                <!-- 5. Operador -->
+                <td>
+                  <span class="operator-badge" [title]="m.user?.email || 'Sistema'">
+                    <span class="user-avatar-mini">{{ (m.user?.name || 'S')[0].toUpperCase() }}</span>
+                    <span>{{ m.user?.name || 'Sistema' }}</span>
+                  </span>
+                </td>
+
+                <!-- 6. Setor Destinado / Solicitante -->
+                <td>
+                  @if (m.type === 'EXIT') {
+                    <span class="font-medium text-dark">{{ m.sector || m.requester || '-' }}</span>
+                    @if (m.sector && m.requester && m.sector !== m.requester) {
+                      <small class="text-muted d-block">({{ m.requester }})</small>
+                    }
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+
+                <!-- 7. Descrição -->
+                <td>{{ m.description || '-' }}</td>
+
+                <!-- 8. Ações -->
+                <td class="text-right actions-cell">
+                  <button
+                    type="button"
+                    class="btn-action btn-icon btn-edit"
+                    title="Editar movimentação"
+                    (click)="abrirModalEditar(m)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Editar</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-action btn-icon btn-delete"
+                    title="Deletar movimentação"
+                    (click)="confirmarDeletar(m)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Deletar</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty">Nenhuma movimentação encontrada.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Rodapé de Paginação -->
+    @if (!carregando() && historico().length > 0) {
+      <footer class="pagination-footer">
+        <span class="pagination-info">
+          Página <strong>{{ paginaAtual() }}</strong> de <strong>{{ totalPaginas() }}</strong>
+        </span>
+
+        <div class="pagination-buttons">
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="paginaAtual() === 1"
+            (click)="irParaPagina(paginaAtual() - 1)">
+            ‹ Anterior
+          </button>
+
+          @for (pg of paginasArray(); track pg) {
+            <button
+              type="button"
+              class="btn-page num-page"
+              [class.active]="paginaAtual() === pg"
+              (click)="irParaPagina(pg)">
+              {{ pg }}
+            </button>
+          }
+
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="paginaAtual() === totalPaginas()"
+            (click)="irParaPagina(paginaAtual() + 1)">
+            Próxima ›
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+
+  <!-- Modal de Edição de Movimentação -->
+  @if (modalEditarAberto() && movimentacaoEmEdicao(); as mov) {
+    <div class="modal-backdrop" (click)="fecharModalEditar()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3>Editar Movimentação #{{ mov.id }}</h3>
+            <p>Atualize os dados da movimentação do item <strong>{{ mov.product?.name || '#' + mov.productId }}</strong>.</p>
+          </div>
+        </div>
+
+        <form [formGroup]="formEditar" (ngSubmit)="salvarEdicao()">
+          <div class="modal-body">
+            <!-- Tipo Informativo -->
+            <div class="form-group mb-3">
+              <label class="form-label">Tipo de Movimentação</label>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge" [ngClass]="mov.type === 'ENTRY' ? 'ok' : 'danger'">
+                  {{ mov.type === 'ENTRY' ? 'ENTRADA' : 'SAÍDA' }}
+                </span>
+                <span class="text-sm">Item: {{ mov.product?.name || '#' + mov.productId }}</span>
+              </div>
+            </div>
+
+            <!-- Quantidade -->
+            <div class="form-group mb-3">
+              <label for="editQuantity" class="form-label">Quantidade *</label>
+              <input
+                id="editQuantity"
+                type="number"
+                class="form-control"
+                min="1"
+                formControlName="quantity" />
+              @if (formEditar.get('quantity')?.touched && formEditar.get('quantity')?.invalid) {
+                <span class="field-error">A quantidade deve ser maior ou igual a 1.</span>
+              }
+            </div>
+
+            <!-- Setor (Apenas Saída) -->
+            @if (mov.type === 'EXIT') {
+              <div class="form-group mb-3">
+                <label for="editSector" class="form-label">Setor de Destino</label>
+                <select id="editSector" class="form-control" formControlName="sector">
+                  <option value="">Selecione o setor destinatário...</option>
+                  @for (s of setores(); track s.id) {
+                    <option [value]="s.name">{{ s.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Solicitante (Apenas Saída) -->
+              <div class="form-group mb-3">
+                <label for="editRequester" class="form-label">Solicitante / Responsável</label>
+                <input
+                  id="editRequester"
+                  type="text"
+                  class="form-control"
+                  placeholder="Ex: Carlos Silva"
+                  formControlName="requester" />
+              </div>
+            }
+
+            <!-- Descrição / Observação -->
+            <div class="form-group mb-2">
+              <label for="editDescription" class="form-label">Descrição / Observação</label>
+              <input
+                id="editDescription"
+                type="text"
+                class="form-control"
+                placeholder="Ex: Ajuste de estoque, transferência..."
+                formControlName="description" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="fecharModalEditar()" [disabled]="editando()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="editando() || formEditar.invalid">
+              {{ editando() ? 'Salvando...' : 'Salvar Alterações' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de Confirmação de Deleção -->
+  <app-confirm-modal
+    [isOpen]="modalDeletarAberto()"
+    title="Deletar Movimentação"
+    [message]="'Tem certeza que deseja deletar a movimentação #' + (movimentacaoParaDeletar()?.id || '') + ' (' + (movimentacaoParaDeletar()?.type === 'ENTRY' ? 'Entrada' : 'Saída') + ' de ' + (movimentacaoParaDeletar()?.quantity || '') + ' ' + (movimentacaoParaDeletar()?.product?.name || '') + ')? Esta ação é irreversível e atualizará o saldo do produto no estoque.'"
+    confirmText="Sim, Deletar"
+    cancelText="Cancelar"
+    [isDanger]="true"
+    [loading]="deletando()"
+    (confirmed)="executarDelecao()"
+    (cancelled)="cancelarDelecao()">
+  </app-confirm-modal>
+</main>
+
+<app-footer></app-footer>

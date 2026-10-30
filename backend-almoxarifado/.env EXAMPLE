@@ -1,0 +1,4 @@
+JWT_SECRET=sua_chave_secreta_aqui_123
+
+DB_TYPE=better-sqlite3
+DB_NAME=database.sqlite

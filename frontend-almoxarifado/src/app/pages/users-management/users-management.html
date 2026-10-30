@@ -1,0 +1,348 @@
+<app-navbar></app-navbar>
+
+<main class="page">
+  <!-- Cabeçalho Principal -->
+  <header class="page-header">
+    <div>
+      <h1>Gestão e Cadastro de Usuários</h1>
+      <p>
+        Área restrita a Administradores para cadastrar novos usuários, definir papéis de acesso (Roles),
+        atualizar dados cadastrais e gerenciar contas do almoxarifado.
+      </p>
+    </div>
+
+    <div>
+      <button type="button" class="btn btn-primary" (click)="abrirModalCriar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Cadastrar Novo Usuário</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Alertas de Feedback -->
+  @if (sucesso()) {
+    <div class="alert-success">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <span>{{ sucesso() }}</span>
+      <button type="button" class="alert-close" (click)="sucesso.set(null)">&times;</button>
+    </div>
+  }
+
+  @if (erro()) {
+    <div class="alert-error">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ erro() }}</span>
+      <button type="button" class="alert-close" (click)="erro.set(null)">&times;</button>
+    </div>
+  }
+
+  <!-- Cards de Indicadores (KPIs Reutilizáveis) -->
+  <section class="kpi-grid">
+    <app-kpi-card
+      title="Total de Usuários"
+      [value]="totalUsuarios()"
+      badgeText="Cadastrados"
+      badgeType="neutral"
+      footerText="Contas com acesso ao sistema"
+      variant="primary">
+    </app-kpi-card>
+
+    <app-kpi-card
+      title="Administradores"
+      [value]="totalAdmins()"
+      badgeText="Acesso Total"
+      badgeType="entry"
+      footerText="Permissão para gerenciar contas e estoques"
+      variant="warning">
+    </app-kpi-card>
+
+    <app-kpi-card
+      title="Operadores do Almoxarifado"
+      [value]="totalOperadores()"
+      badgeText="Operacional"
+      badgeType="neutral"
+      footerText="Acesso a movimentações e consultas"
+      variant="default">
+    </app-kpi-card>
+  </section>
+
+  <!-- Tabela de Usuários Cadastrados -->
+  <section class="card table-card">
+    <div class="table-header">
+      <div>
+        <h2>Usuários do Sistema</h2>
+        <p class="table-subtitle">Listagem de operadores e administradores com auditoria de movimentações.</p>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="search"
+          class="form-control"
+          placeholder="Buscar por nome ou e-mail..."
+          [ngModel]="busca()"
+          (ngModelChange)="busca.set($event)" />
+      </div>
+    </div>
+
+    @if (carregando()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Carregando contas de usuários...</p>
+      </div>
+    } @else if (usuariosFiltrados().length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <h3>Nenhum usuário encontrado</h3>
+        <p>Não foram localizadas contas correspondentes aos critérios de busca digitados.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Papel / Permissão (Role)</th>
+              <th class="text-center">Movimentações</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of usuariosFiltrados(); track u.id) {
+              <tr>
+                <td class="col-id font-mono">#{{ u.id }}</td>
+                <td class="col-name font-semibold">{{ u.name }}</td>
+                <td class="col-email">{{ u.email }}</td>
+                <td class="col-role">
+                  @if (u.role === 'ADMIN') {
+                    <span class="role-badge role-admin">
+                      Administrador
+                    </span>
+                  } @else {
+                    <span class="role-badge role-user">
+                      Usuário
+                    </span>
+                  }
+                </td>
+                <td class="text-center">
+                  <span class="badge-count">{{ u.movementsCount ?? 0 }} registros</span>
+                </td>
+                <td class="text-right actions-cell">
+                  <button
+                    type="button"
+                    class="btn-action btn-edit"
+                    (click)="abrirModalEditar(u)"
+                    title="Editar informações da conta">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Editar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-action btn-delete"
+                    [disabled]="currentUserId() === u.id"
+                    (click)="confirmarExclusao(u)"
+                    title="Excluir conta do usuário">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Excluir</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- Modal de Cadastro de Novo Usuário (com definição de role) -->
+  @if (modalCriarAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalCriar()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+          </div>
+          <div>
+            <h3>Cadastrar Novo Usuário</h3>
+            <p>Defina o nome, e-mail de login, senha e o nível de acesso da conta.</p>
+          </div>
+        </div>
+
+        <form [formGroup]="formCriar" (ngSubmit)="salvarNovoUsuario()">
+          <div class="modal-body">
+            <!-- Nome -->
+            <div class="form-group mb-3">
+              <label for="createName" class="form-label">Nome Completo *</label>
+              <input
+                id="createName"
+                type="text"
+                class="form-control"
+                placeholder="Ex: Carlos Silva"
+                formControlName="name" />
+              @if (formCriar.get('name')?.touched && formCriar.get('name')?.invalid) {
+                <span class="field-error">Nome é obrigatório (mínimo 3 caracteres).</span>
+              }
+            </div>
+
+            <!-- E-mail -->
+            <div class="form-group mb-3">
+              <label for="createEmail" class="form-label">E-mail Institucional *</label>
+              <input
+                id="createEmail"
+                type="email"
+                class="form-control"
+                placeholder="usuario@almoxarifado.com"
+                formControlName="email" />
+              @if (formCriar.get('email')?.touched && formCriar.get('email')?.invalid) {
+                <span class="field-error">Informe um e-mail válido.</span>
+              }
+            </div>
+
+            <!-- Senha -->
+            <div class="form-group mb-3">
+              <label for="createPassword" class="form-label">Senha Inicial *</label>
+              <input
+                id="createPassword"
+                type="password"
+                class="form-control"
+                placeholder="Mínimo de 6 caracteres"
+                formControlName="password" />
+              @if (formCriar.get('password')?.touched && formCriar.get('password')?.invalid) {
+                <span class="field-error">A senha deve ter no mínimo 6 caracteres.</span>
+              }
+            </div>
+
+            <!-- Papel / Role -->
+            <div class="form-group mb-2">
+              <label for="createRole" class="form-label">Perfil de Acesso (Role) *</label>
+              <select id="createRole" class="form-control select-role" formControlName="role">
+                <option value="USER">👤 Operador (USER) — Movimentações de estoque e produtos</option>
+                <option value="ADMIN">👑 Administrador (ADMIN) — Acesso total e gestão de contas</option>
+              </select>
+              <span class="hint-text">O Administrador tem poder de criar, editar e excluir outras contas.</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="fecharModalCriar()" [disabled]="salvando()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="salvando() || formCriar.invalid">
+              {{ salvando() ? 'Cadastrando...' : 'Cadastrar Usuário' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de Edição de Usuário -->
+  @if (modalEditarAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalEditar()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-icon-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3>Editar Usuário #{{ usuarioEmEdicao()?.id }}</h3>
+            <p>Altere os dados, defina uma nova role ou redefina a senha de acesso.</p>
+          </div>
+        </div>
+
+        <form [formGroup]="formEditar" (ngSubmit)="salvarEdicaoUsuario()">
+          <div class="modal-body">
+            <!-- Nome -->
+            <div class="form-group mb-3">
+              <label for="editName" class="form-label">Nome Completo *</label>
+              <input id="editName" type="text" class="form-control" formControlName="name" />
+            </div>
+
+            <!-- E-mail -->
+            <div class="form-group mb-3">
+              <label for="editEmail" class="form-label">E-mail Institucional *</label>
+              <input id="editEmail" type="email" class="form-control" formControlName="email" />
+            </div>
+
+            <!-- Role -->
+            <div class="form-group mb-3">
+              <label for="editRole" class="form-label">Perfil de Acesso (Role) *</label>
+              <select id="editRole" class="form-control select-role" formControlName="role">
+                <option value="USER">👤 Operador (USER)</option>
+                <option value="ADMIN">👑 Administrador (ADMIN)</option>
+              </select>
+            </div>
+
+            <!-- Nova Senha (Opcional) -->
+            <div class="form-group mb-2">
+              <label for="editPassword" class="form-label">Redefinir Senha (opcional)</label>
+              <input
+                id="editPassword"
+                type="password"
+                class="form-control"
+                placeholder="Deixe em branco para manter a senha atual"
+                formControlName="password" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="fecharModalEditar()" [disabled]="salvando()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="salvando() || formEditar.invalid">
+              {{ salvando() ? 'Salvando...' : 'Salvar Alterações' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de Confirmação de Exclusão (Reutilizável) -->
+  <app-confirm-modal
+    [isOpen]="modalExcluirAberto()"
+    title="Excluir Conta de Usuário"
+    [message]="'Tem certeza que deseja remover o usuário \'' + (usuarioParaExcluir()?.name || '') + '\' (' + (usuarioParaExcluir()?.email || '') + ')? Esta ação é permanente.'"
+    confirmText="Sim, Excluir Usuário"
+    cancelText="Cancelar"
+    [isDanger]="true"
+    [loading]="salvando()"
+    (confirmed)="executarExclusao()"
+    (cancelled)="cancelarExclusao()">
+  </app-confirm-modal>
+</main>
+
+<!-- Footer Reutilizável no rodapé de toda a aplicação -->
+<app-footer></app-footer>
+

@@ -1,0 +1,397 @@
+import { Component, inject, OnInit, signal, computed, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { Navbar } from '../../components/navbar/navbar';
+import { StockService, Product } from '../../services/stock';
+import { MovementService, Movement, MovementType } from '../../services/movement';
+import { SectorService, Sector } from '../../services/sector';
+import { Footer } from '../../components/footer/footer';
+import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
+
+@Component({
+  selector: 'app-stock-movement',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Navbar, Footer, ConfirmModal],
+  templateUrl: './stock-movement.html',
+  styleUrls: ['./stock-movement.css'],
+})
+export class StockMovement implements OnInit {
+  private fb = inject(FormBuilder);
+  private stockService = inject(StockService);
+  private movementService = inject(MovementService);
+  private sectorService = inject(SectorService);
+  private platformId = inject(PLATFORM_ID);
+
+  produtos = signal<Product[]>([]);
+  setores = signal<Sector[]>([]);
+  historico = signal<Movement[]>([]);
+  carregando = signal<boolean>(true);
+  salvando = signal<boolean>(false);
+  erro = signal<string | null>(null);
+  sucesso = signal<string | null>(null);
+
+  // Modais de Edição e Deleção
+  modalEditarAberto = signal<boolean>(false);
+  movimentacaoEmEdicao = signal<Movement | null>(null);
+  editando = signal<boolean>(false);
+
+  modalDeletarAberto = signal<boolean>(false);
+  movimentacaoParaDeletar = signal<Movement | null>(null);
+  deletando = signal<boolean>(false);
+
+  // Estado reativo do formulário (o form.value não é signal, então espelhamos aqui)
+  tipo = signal<MovementType>('ENTRY');
+  produtoId = signal<number | null>(null);
+  buscaProduto = signal<string>('');
+
+  // Filtros de Pesquisa
+  buscaNome = signal<string>('');
+  filtroTipo = signal<string>('');
+  filtroSetor = signal<string>('');
+  dataInicio = signal<string>('');
+  dataFim = signal<string>('');
+
+  // Controles de Paginação
+  paginaAtual = signal<number>(1);
+  itensPorPagina = signal<number>(10);
+
+  form = this.fb.nonNullable.group({
+    productId: [null as number | null, [Validators.required]],
+    type: ['ENTRY' as MovementType, [Validators.required]],
+    quantity: [1, [Validators.required, Validators.min(1)]],
+    sector: [{ value: '', disabled: true }],
+    requester: [{ value: '', disabled: true }],
+    description: [''],
+  });
+
+  formEditar = this.fb.group({
+    type: ['ENTRY' as MovementType, [Validators.required]],
+    quantity: [1, [Validators.required, Validators.min(1)]],
+    sector: [''],
+    requester: [''],
+    description: [''],
+  });
+
+  // Produto atualmente escolhido no seletor
+  produtoSelecionado = computed(
+    () => this.produtos().find((p) => p.id === this.produtoId()) ?? null
+  );
+
+  // Lista do seletor filtrada pela busca (ignora acentos e maiúsculas)
+  produtosFiltrados = computed(() => {
+    const termo = this.normalizar(this.buscaProduto());
+    const lista = this.produtos();
+    return termo ? lista.filter((p) => this.normalizar(p.name).includes(termo)) : lista;
+  });
+
+  // Lista fatiada para a página atual
+  paginados = computed(() => {
+    const inicio = (this.paginaAtual() - 1) * this.itensPorPagina();
+    const fim = inicio + this.itensPorPagina();
+    return this.historico().slice(inicio, fim);
+  });
+
+  // Total de páginas calculadas
+  totalPaginas = computed(() => {
+    const total = Math.ceil(this.historico().length / this.itensPorPagina());
+    return total > 0 ? total : 1;
+  });
+
+  // Array de números das páginas
+  paginasArray = computed(() => {
+    return Array.from({ length: this.totalPaginas() }, (_, i) => i + 1);
+  });
+
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.carregarDados();
+    }
+  }
+
+  carregarDados(): void {
+    this.carregando.set(true);
+    this.sectorService.getSectors().subscribe({
+      next: (sec) => this.setores.set(sec),
+      error: (err) => console.error('Erro ao carregar setores:', err),
+    });
+
+    this.stockService.getProducts().subscribe({
+      next: (prods) => {
+        this.produtos.set(prods);
+        this.pesquisar();
+      },
+      error: (err) => {
+        console.error('Erro ao carregar produtos:', err);
+        this.erro.set('Não foi possível carregar a lista de produtos.');
+        this.carregando.set(false);
+      },
+    });
+  }
+
+  pesquisar(): void {
+    this.carregando.set(true);
+    this.paginaAtual.set(1);
+
+    this.movementService
+      .searchMovements({
+        productName: this.buscaNome() || undefined,
+        type: this.filtroTipo() || undefined,
+        sector: this.filtroSetor() || undefined,
+        startDate: this.dataInicio() || undefined,
+        endDate: this.dataFim() || undefined,
+      })
+      .subscribe({
+        next: (movs) => {
+          this.historico.set(movs);
+          this.carregando.set(false);
+        },
+        error: (err) => {
+          console.error('Erro na pesquisa de movimentações:', err);
+          this.carregando.set(false);
+        },
+      });
+  }
+
+  limparFiltros(): void {
+    this.buscaNome.set('');
+    this.filtroTipo.set('');
+    this.filtroSetor.set('');
+    this.dataInicio.set('');
+    this.dataFim.set('');
+    this.pesquisar();
+  }
+
+  irParaPagina(pagina: number): void {
+    if (pagina >= 1 && pagina <= this.totalPaginas()) {
+      this.paginaAtual.set(pagina);
+    }
+  }
+
+  alterarItensPorPagina(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.itensPorPagina.set(Number(target.value));
+    this.paginaAtual.set(1);
+  }
+
+  private normalizar(texto: string): string {
+    return texto
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  // Na saída, produto sem saldo não pode ser escolhido
+  indisponivel(p: Product): boolean {
+    return this.tipo() === 'EXIT' && p.currentStock < 1;
+  }
+
+  selecionarProduto(p: Product): void {
+    if (this.indisponivel(p)) return;
+    this.produtoId.set(p.id);
+    this.form.patchValue({ productId: p.id });
+    this.buscaProduto.set('');
+  }
+
+  limparProduto(): void {
+    this.produtoId.set(null);
+    this.form.patchValue({ productId: null });
+  }
+
+  selecionarTipo(tipo: MovementType): void {
+    this.tipo.set(tipo);
+    this.form.patchValue({ type: tipo });
+
+    // Em Entradas, setor e solicitante não são aplicáveis e ficam desabilitados
+    if (tipo === 'ENTRY') {
+      this.form.get('sector')?.disable();
+      this.form.get('sector')?.clearValidators();
+      this.form.get('requester')?.disable();
+      this.form.patchValue({ sector: '', requester: '' });
+    } else {
+      this.form.get('sector')?.enable();
+      this.form.get('sector')?.setValidators([Validators.required]);
+      this.form.get('requester')?.enable();
+    }
+    this.form.get('sector')?.updateValueAndValidity();
+
+    // Se mudou para Saída e o produto escolhido está sem estoque, limpa a seleção
+    const prod = this.produtoSelecionado();
+    if (tipo === 'EXIT' && prod && prod.currentStock < 1) {
+      this.limparProduto();
+    }
+  }
+
+  salvar(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const values = this.form.getRawValue();
+    const prodSelecionado = this.produtos().find((p) => p.id === values.productId);
+
+    if (values.type === 'EXIT' && prodSelecionado && prodSelecionado.currentStock < values.quantity) {
+      this.erro.set(
+        `Estoque insuficiente. Quantidade disponível: ${prodSelecionado.currentStock} ${prodSelecionado.measurement || 'UN'}`
+      );
+      return;
+    }
+
+    this.salvando.set(true);
+    this.erro.set(null);
+    this.sucesso.set(null);
+
+    const currentUserId = Number(localStorage.getItem('userId')) || 1;
+
+    // Se a operação for de SAÍDA, captura o setor de destino e solicitante
+    const setorDestino = values.type === 'EXIT' ? (values.sector?.trim() || undefined) : undefined;
+    const solicitante = values.type === 'EXIT' ? (values.requester?.trim() || values.sector?.trim() || undefined) : undefined;
+
+    this.movementService
+      .createMovement({
+        productId: values.productId!,
+        type: values.type,
+        quantity: values.quantity,
+        sector: setorDestino,
+        requester: solicitante,
+        description: values.description || undefined,
+        userId: currentUserId,
+      })
+      .subscribe({
+        next: () => {
+          this.sucesso.set(
+            `Movimentação de ${values.type === 'ENTRY' ? 'Entrada' : 'Saída'} registrada com sucesso!`
+          );
+          this.salvando.set(false);
+          this.form.patchValue({ quantity: 1, sector: '', requester: '', description: '' });
+          if (this.tipo() === 'ENTRY') {
+            this.form.get('sector')?.disable();
+            this.form.get('requester')?.disable();
+          }
+          this.limparProduto();
+          this.carregarDados();
+        },
+        error: (err) => {
+          console.error('Erro ao registrar movimentação:', err);
+          this.erro.set(err.error?.message || 'Erro ao registrar movimentação.');
+          this.salvando.set(false);
+        },
+      });
+  }
+
+  // --- Edição de Movimentação ---
+
+  abrirModalEditar(m: Movement): void {
+    this.movimentacaoEmEdicao.set(m);
+    this.formEditar.patchValue({
+      type: m.type,
+      quantity: m.quantity,
+      sector: m.sector || '',
+      requester: m.requester || '',
+      description: m.description || '',
+    });
+
+    if (m.type === 'ENTRY') {
+      this.formEditar.get('sector')?.disable();
+      this.formEditar.get('requester')?.disable();
+    } else {
+      this.formEditar.get('sector')?.enable();
+      this.formEditar.get('requester')?.enable();
+    }
+
+    this.erro.set(null);
+    this.modalEditarAberto.set(true);
+  }
+
+  fecharModalEditar(): void {
+    this.modalEditarAberto.set(false);
+    this.movimentacaoEmEdicao.set(null);
+  }
+
+  salvarEdicao(): void {
+    if (this.formEditar.invalid) {
+      this.formEditar.markAllAsTouched();
+      return;
+    }
+
+    const mov = this.movimentacaoEmEdicao();
+    if (!mov) return;
+
+    const values = this.formEditar.getRawValue();
+    this.editando.set(true);
+    this.erro.set(null);
+
+    const payload = {
+      type: (values.type as MovementType) || mov.type,
+      quantity: Number(values.quantity),
+      sector: values.type === 'EXIT' ? (values.sector?.trim() || undefined) : undefined,
+      requester: values.type === 'EXIT' ? (values.requester?.trim() || undefined) : undefined,
+      description: values.description?.trim() || undefined,
+    };
+
+    this.movementService.updateMovement(mov.id, payload).subscribe({
+      next: () => {
+        this.sucesso.set(`Movimentação #${mov.id} atualizada com sucesso!`);
+        this.editando.set(false);
+        this.fecharModalEditar();
+        this.carregarDados();
+      },
+      error: (err) => {
+        console.error('Erro ao editar movimentação:', err);
+        this.erro.set(err.error?.message || 'Erro ao salvar alterações da movimentação.');
+        this.editando.set(false);
+      },
+    });
+  }
+
+  // --- Exclusão/Deleção de Movimentação ---
+
+  confirmarDeletar(m: Movement): void {
+    this.movimentacaoParaDeletar.set(m);
+    this.modalDeletarAberto.set(true);
+  }
+
+  // Suporte a chamada anterior por compatibilidade
+  excluirMovimentacao(m: Movement): void {
+    this.confirmarDeletar(m);
+  }
+
+  executarDelecao(): void {
+    const mov = this.movimentacaoParaDeletar();
+    if (!mov) return;
+
+    this.deletando.set(true);
+    this.erro.set(null);
+
+    this.movementService.deleteMovement(mov.id).subscribe({
+      next: (res) => {
+        // Remove imediatamente aquele item da lista exibida na tela:
+        this.historico.update((lista) => lista.filter((item) => item.id !== mov.id));
+        this.sucesso.set(res.message || `Movimentação #${mov.id} deletada com sucesso!`);
+        this.deletando.set(false);
+        this.modalDeletarAberto.set(false);
+        this.movimentacaoParaDeletar.set(null);
+
+        // Atualiza os produtos em segundo plano para refletir o saldo ajustado
+        this.stockService.getProducts().subscribe({
+          next: (prods) => this.produtos.set(prods),
+        });
+      },
+      error: (err) => {
+        console.error('Erro ao deletar movimentação:', err);
+        this.erro.set(err.error?.message || 'Erro ao deletar movimentação.');
+        this.deletando.set(false);
+        this.modalDeletarAberto.set(false);
+        this.movimentacaoParaDeletar.set(null);
+      },
+    });
+  }
+
+  cancelarDelecao(): void {
+    this.modalDeletarAberto.set(false);
+    this.movimentacaoParaDeletar.set(null);
+  }
+
+  
+}

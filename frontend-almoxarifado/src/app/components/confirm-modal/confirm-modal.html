@@ -1,0 +1,36 @@
+@if (isOpen) {
+  <div class="modal-backdrop" (click)="onCancel()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon" [class.danger]="isDanger">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 class="modal-title">{{ title }}</h3>
+      </div>
+
+      <div class="modal-body">
+        <p>{{ message }}</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="loading">
+          {{ cancelText }}
+        </button>
+        <button
+          type="button"
+          class="btn-confirm"
+          [class.btn-danger]="isDanger"
+          [class.btn-primary]="!isDanger"
+          (click)="onConfirm()"
+          [disabled]="loading">
+          {{ loading ? 'Processando...' : confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
