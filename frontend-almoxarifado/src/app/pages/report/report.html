@@ -262,16 +262,16 @@
           <thead>
             <tr>
               <th>Mês / Data</th>
-              <th class="no-print-col">Operação</th>
-              <th>Setor Destinado</th>
+              <th class="col-type">Operação</th>
+              <th>Setor</th>
               <th>Item</th>
               <th>Categoria</th>
-              <th>Unidade</th>
-              <th class="text-right">Quantidade</th>
+              <th>Und</th>
+              <th class="text-right">Qtd</th>
               <th class="text-right">Valor Unitário</th>
               <th class="text-right">Valor Total</th>
               <th class="no-print-col">Operador</th>
-              <th class="no-print-col">Observação</th>
+              <th class="no-print-col">Obs</th>
             </tr>
           </thead>
           <tbody>
@@ -284,21 +284,15 @@
                 </td>
 
                 <!-- Tipo / Operação (Visível na tela) -->
-                <td class="col-type no-print-col">
+                <td class="col-type">
                   @if (mov.type === 'ENTRY') {
                     <span class="badge-type badge-entry">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <polyline points="19 12 12 19 5 12"></polyline>
-                      </svg>
+
                       Entrada
                     </span>
                   } @else {
                     <span class="badge-type badge-exit">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <line x1="12" y1="19" x2="12" y2="5"></line>
-                        <polyline points="5 12 12 5 19 12"></polyline>
-                      </svg>
+
                       Saída
                     </span>
                   }
@@ -342,7 +336,7 @@
                 </td>
 
                 <!-- Operador (oculto no print) -->
-                <td class="col-user no-print-col">
+                <td class="no-print-col">
                   <span class="user-badge" [title]="mov.user?.email || 'Sistema'">
                     <span class="user-avatar-mini">{{ (mov.user?.name || 'S')[0].toUpperCase() }}</span>
                     <span>{{ mov.user?.name || 'Sistema' }}</span>
@@ -350,7 +344,7 @@
                 </td>
 
                 <!-- Observação / Solicitante secundário (oculto no print) -->
-                <td class="col-desc no-print-col">
+                <td class="no-print-col">
                   <span class="desc-text" [title]="mov.description || ''">
                     {{ mov.description || '-' }}
                   </span>

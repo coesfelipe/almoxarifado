@@ -268,10 +268,8 @@ export class Report implements OnInit {
    * Identifica o setor de destino da movimentação (prioriza sector, fallback para requester em saídas).
    */
   obterSetorDestinado(mov: Movement): string {
-    if (mov.type === 'ENTRY') {
-      return 'Almoxarifado (Entrada)';
-    }
-    return mov.sector || mov.requester || 'Não informado';
+    
+    return mov.sector || mov.requester || " ";
   }
 
   /**
