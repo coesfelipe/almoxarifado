@@ -9,16 +9,23 @@
       <h1>Estoque</h1>
       <p>Acompanhe a quantidade e a situação de cada produto no almoxarifado.</p>
     </div>
-    <a routerLink="/stock/create" class="btn-primary text-decoration-none">
+    <button type="button" class="btn-primary" (click)="abrirModalCriar()">
       + Novo produto
-    </a>
+    </button>
   </header>
 
-  <!-- Indicador de Erro -->
+  <!-- Alertas -->
   @if (erro()) {
     <div class="alert-error">
       <span>{{ erro() }}</span>
       <button type="button" (click)="carregarProdutos()">Tentar novamente</button>
+    </div>
+  }
+
+  @if (sucesso()) {
+    <div class="alert-success" role="status">
+      <span>{{ sucesso() }}</span>
+      <button type="button" (click)="sucesso.set(null)" aria-label="Fechar">✕</button>
     </div>
   }
 
@@ -65,7 +72,7 @@
   <section class="table-card">
     <div class="table-header-title d-flex justify-content-between align-items-center">
       <strong>Listagem de Produtos ({{ filtrados().length }})</strong>
-      
+
       <div class="per-page-selector">
         <label for="perPage">Exibir:</label>
         <select id="perPage" class="form-control-sm" (change)="alterarItensPorPagina($event)">
@@ -94,9 +101,7 @@
         <tbody>
           @if (carregando()) {
             <tr>
-              <td colspan="9" class="empty">
-                Carregando produtos do servidor...
-              </td>
+              <td colspan="9" class="empty">Carregando produtos do servidor...</td>
             </tr>
           } @else {
             @for (p of paginados(); track p.id) {
@@ -122,31 +127,15 @@
                 </td>
                 <td>
                   <div class="actions">
-                    <a [routerLink]="['/stock/edit', p.id]" class="btn-action edit" title="Editar">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="18" 
-                        height="18" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        stroke-width="2" 
-                        stroke-linecap="round" 
-                        stroke-linejoin="round">
+                    <button type="button" class="btn-action edit" title="Editar" (click)="abrirModalEditar(p)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                       </svg>
-                    </a>
-                    <button type="button" class="btn-action delete" (click)="excluirProduto(p.id, p.name)" title="Excluir">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="18" 
-                        height="18" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        stroke-width="2" 
-                        stroke-linecap="round" 
-                        stroke-linejoin="round">
+                    </button>
+                    <button type="button" class="btn-action delete btn-delete" title="Excluir" (click)="excluirProduto(p.id, p.name)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         <line x1="10" y1="11" x2="10" y2="17"/>
@@ -176,27 +165,21 @@
         </span>
 
         <div class="pagination-buttons">
-          <button
-            type="button"
-            class="btn-page"
+          <button type="button" class="btn-page"
             [disabled]="paginaAtual() === 1"
             (click)="irParaPagina(paginaAtual() - 1)">
             ‹ Anterior
           </button>
 
           @for (pg of paginasArray(); track pg) {
-            <button
-              type="button"
-              class="btn-page num-page"
+            <button type="button" class="btn-page num-page"
               [class.active]="paginaAtual() === pg"
               (click)="irParaPagina(pg)">
               {{ pg }}
             </button>
           }
 
-          <button
-            type="button"
-            class="btn-page"
+          <button type="button" class="btn-page"
             [disabled]="paginaAtual() === totalPaginas()"
             (click)="irParaPagina(paginaAtual() + 1)">
             Próxima ›
@@ -207,5 +190,130 @@
   </section>
 
 </main>
+
+<!-- Modal de Cadastro / Edição -->
+@if (modalAberto()) {
+  <div class="modal-overlay" (click)="fecharModal()">
+    <div class="modal-box" role="dialog" aria-modal="true" [attr.aria-label]="titulo()" (click)="$event.stopPropagation()">
+
+      <header class="modal-header">
+        <div>
+          <h2>{{ titulo() }}</h2>
+          @if (isEditMode() && produtoEmEdicao()?.user) {
+            <p class="meta">
+              Cadastrado por: <strong>{{ produtoEmEdicao()?.user?.name }}</strong> ({{ produtoEmEdicao()?.user?.email }})
+              @if (produtoEmEdicao()?.createdAt) {
+                em {{ produtoEmEdicao()?.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              }
+            </p>
+          } @else if (!isEditMode()) {
+            <p class="meta">Preencha os dados abaixo para adicionar um item ao almoxarifado.</p>
+          }
+        </div>
+        <button type="button" class="modal-close" (click)="fecharModal()" aria-label="Fechar">✕</button>
+      </header>
+
+      @if (erroForm()) {
+        <div class="alert-danger" role="alert">{{ erroForm() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="salvar()">
+
+        <div class="field">
+          <label for="name" class="form-label">Nome do Produto *</label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            class="form-control"
+            [class.is-invalid]="campoInvalido('name')"
+            placeholder="Ex: Teclado Mecânico" />
+          @if (campoInvalido('name')) {
+            <div class="invalid-feedback">O nome é obrigatório (mínimo 3 caracteres).</div>
+          }
+        </div>
+
+        <div class="field">
+          <label for="category" class="form-label">Categoria *</label>
+          <select
+            id="category"
+            formControlName="category"
+            class="form-control"
+            [class.is-invalid]="campoInvalido('category')">
+            <option value="" disabled>Selecione uma categoria...</option>
+            @for (cat of categorias(); track cat.id) {
+              <option [value]="cat.name">{{ cat.name }}</option>
+            }
+          </select>
+          @if (campoInvalido('category')) {
+            <div class="invalid-feedback">A categoria é obrigatória.</div>
+          }
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="currentStock" class="form-label">{{ rotuloEstoque() }}</label>
+            <input
+              type="number"
+              id="currentStock"
+              formControlName="currentStock"
+              class="form-control"
+              [class.is-invalid]="campoInvalido('currentStock')"
+              min="0" />
+            @if (campoInvalido('currentStock')) {
+              <div class="invalid-feedback">O estoque não pode ser negativo.</div>
+            }
+          </div>
+
+          <div class="field">
+            <label for="measurement" class="form-label">Unidade de Medida *</label>
+            <select
+              id="measurement"
+              formControlName="measurement"
+              class="form-control"
+              [class.is-invalid]="campoInvalido('measurement')">
+              @for (g of unidadesMedida; track g.grupo) {
+                <optgroup [label]="g.grupo">
+                  @for (u of g.options; track u.valor) {
+                    <option [value]="u.valor">{{ u.rotulo }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+            @if (campoInvalido('measurement')) {
+              <div class="invalid-feedback">A unidade de medida é obrigatória.</div>
+            }
+          </div>
+
+          <div class="field">
+            <label for="price" class="form-label">Preço (R$)</label>
+            <input
+              type="number"
+              id="price"
+              formControlName="price"
+              class="form-control"
+              [class.is-invalid]="campoInvalido('price')"
+              step="0.01"
+              min="0"
+              placeholder="0.00" />
+            @if (campoInvalido('price')) {
+              <div class="invalid-feedback">O preço não pode ser negativo.</div>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="fecharModal()" [disabled]="salvando()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="salvando() || form.invalid">
+            {{ salvando() ? 'Salvando...' : rotuloBotao() }}
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+}
 
 <app-footer></app-footer>

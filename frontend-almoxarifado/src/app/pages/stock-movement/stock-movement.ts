@@ -6,12 +6,11 @@ import { StockService, Product } from '../../services/stock';
 import { MovementService, Movement, MovementType } from '../../services/movement';
 import { SectorService, Sector } from '../../services/sector';
 import { Footer } from '../../components/footer/footer';
-import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
 
 @Component({
   selector: 'app-stock-movement',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Navbar, Footer, ConfirmModal],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Navbar, Footer],
   templateUrl: './stock-movement.html',
   styleUrls: ['./stock-movement.css'],
 })
@@ -347,33 +346,21 @@ export class StockMovement implements OnInit {
 
   // --- Exclusão/Deleção de Movimentação ---
 
-  confirmarDeletar(m: Movement): void {
-    this.movimentacaoParaDeletar.set(m);
-    this.modalDeletarAberto.set(true);
-  }
-
-  // Suporte a chamada anterior por compatibilidade
   excluirMovimentacao(m: Movement): void {
-    this.confirmarDeletar(m);
-  }
+    const produto = m.product?.name || `#${m.productId}`;
+    if (!confirm(`Deseja excluir a movimentação #${m.id} (${produto})? O saldo do produto será ajustado.`)) {
+      return;
+    }
 
-  executarDelecao(): void {
-    const mov = this.movimentacaoParaDeletar();
-    if (!mov) return;
-
-    this.deletando.set(true);
     this.erro.set(null);
+    this.sucesso.set(null);
 
-    this.movementService.deleteMovement(mov.id).subscribe({
+    this.movementService.deleteMovement(m.id).subscribe({
       next: (res) => {
-        // Remove imediatamente aquele item da lista exibida na tela:
-        this.historico.update((lista) => lista.filter((item) => item.id !== mov.id));
-        this.sucesso.set(res.message || `Movimentação #${mov.id} deletada com sucesso!`);
-        this.deletando.set(false);
-        this.modalDeletarAberto.set(false);
-        this.movimentacaoParaDeletar.set(null);
+        this.historico.update((lista) => lista.filter((item) => item.id !== m.id));
+        this.sucesso.set(res.message || `Movimentação #${m.id} deletada com sucesso!`);
 
-        // Atualiza os produtos em segundo plano para refletir o saldo ajustado
+        // Atualiza os produtos para refletir o saldo ajustado
         this.stockService.getProducts().subscribe({
           next: (prods) => this.produtos.set(prods),
         });
@@ -381,16 +368,8 @@ export class StockMovement implements OnInit {
       error: (err) => {
         console.error('Erro ao deletar movimentação:', err);
         this.erro.set(err.error?.message || 'Erro ao deletar movimentação.');
-        this.deletando.set(false);
-        this.modalDeletarAberto.set(false);
-        this.movimentacaoParaDeletar.set(null);
       },
     });
-  }
-
-  cancelarDelecao(): void {
-    this.modalDeletarAberto.set(false);
-    this.movimentacaoParaDeletar.set(null);
   }
 
   

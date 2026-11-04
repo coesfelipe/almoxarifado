@@ -315,22 +315,24 @@
                     class="btn-action btn-icon btn-edit"
                     title="Editar movimentação"
                     (click)="abrirModalEditar(m)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    <span>Editar</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                      </svg>
                   </button>
                   <button
                     type="button"
                     class="btn-action btn-icon btn-delete"
                     title="Deletar movimentação"
-                    (click)="confirmarDeletar(m)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                    <span>Deletar</span>
+                    (click)="excluirMovimentacao(m)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                      </svg>
+                    <span></span>
                   </button>
                 </td>
               </tr>
@@ -475,18 +477,6 @@
     </div>
   }
 
-  <!-- Modal de Confirmação de Deleção -->
-  <app-confirm-modal
-    [isOpen]="modalDeletarAberto()"
-    title="Deletar Movimentação"
-    [message]="'Tem certeza que deseja deletar a movimentação #' + (movimentacaoParaDeletar()?.id || '') + ' (' + (movimentacaoParaDeletar()?.type === 'ENTRY' ? 'Entrada' : 'Saída') + ' de ' + (movimentacaoParaDeletar()?.quantity || '') + ' ' + (movimentacaoParaDeletar()?.product?.name || '') + ')? Esta ação é irreversível e atualizará o saldo do produto no estoque.'"
-    confirmText="Sim, Deletar"
-    cancelText="Cancelar"
-    [isDanger]="true"
-    [loading]="deletando()"
-    (confirmed)="executarDelecao()"
-    (cancelled)="cancelarDelecao()">
-  </app-confirm-modal>
 </main>
 
 <app-footer></app-footer>

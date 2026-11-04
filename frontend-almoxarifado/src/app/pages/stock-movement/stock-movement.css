@@ -57,7 +57,7 @@ button, input, select {
 
 /* ───────── Layout ───────── */
 .page {
-  max-width: 1040px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem;
 }
