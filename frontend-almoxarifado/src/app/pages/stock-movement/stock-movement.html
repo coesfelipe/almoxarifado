@@ -256,9 +256,7 @@
             <th>Operador</th>
             <th>Setor Destinado / Solicitante</th>
             <th>Descrição</th>
-            @if (isAdmin()) {
-              <th class="text-right">Ações</th>
-            }
+            <th class="text-right">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -311,7 +309,7 @@
                 <td>{{ m.description || '-' }}</td>
 
                 <!-- 8. Ações -->
-                @if (isAdmin()) {
+                 
                   <td class="text-right actions-cell">
                     <button
                       type="button"
@@ -323,6 +321,7 @@
                           <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                         </svg>
                     </button>
+                    @if (isAdmin()) {
                     <button
                       type="button"
                       class="btn-action btn-icon btn-delete"
@@ -337,8 +336,9 @@
                         </svg>
                       <span></span>
                     </button>
+                  }
                   </td>
-                }
+
               </tr>
             } @empty {
               <tr>
@@ -419,6 +419,7 @@
             </div>
 
             <!-- Quantidade -->
+            @if (isAdmin()) {
             <div class="form-group mb-3">
               <label for="editQuantity" class="form-label">Quantidade *</label>
               <input
@@ -455,7 +456,7 @@
                   formControlName="requester" />
               </div>
             }
-
+          }
             <!-- Descrição / Observação -->
             <div class="form-group mb-2">
               <label for="editDescription" class="form-label">Descrição / Observação</label>
