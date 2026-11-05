@@ -6,6 +6,7 @@ import { Navbar } from '../../components/navbar/navbar';
 import { Footer } from '../../components/footer/footer';
 import { StockService, Product } from '../../services/stock';
 import { CategoryService, Category } from '../../services/category';
+import { AuthService } from '../../services/auth';
 
 type Campo = 'name' | 'category' | 'currentStock' | 'measurement' | 'price';
 
@@ -21,6 +22,10 @@ export class Stock implements OnInit {
   private stockService = inject(StockService);
   private categoryService = inject(CategoryService);
   private platformId = inject(PLATFORM_ID);
+  private authService = inject(AuthService);
+
+  // Regra de Role (Administrador)
+  isAdmin = computed(() => this.authService.isAdmin);
 
   // Listagem
   produtos = signal<Product[]>([]);

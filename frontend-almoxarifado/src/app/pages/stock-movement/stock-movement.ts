@@ -6,6 +6,7 @@ import { StockService, Product } from '../../services/stock';
 import { MovementService, Movement, MovementType } from '../../services/movement';
 import { SectorService, Sector } from '../../services/sector';
 import { Footer } from '../../components/footer/footer';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-stock-movement',
@@ -20,7 +21,11 @@ export class StockMovement implements OnInit {
   private movementService = inject(MovementService);
   private sectorService = inject(SectorService);
   private platformId = inject(PLATFORM_ID);
+  private authService = inject(AuthService);
 
+  // Regra de Role (Administrador)
+  isAdmin = computed(() => this.authService.isAdmin);
+  
   produtos = signal<Product[]>([]);
   setores = signal<Sector[]>([]);
   historico = signal<Movement[]>([]);

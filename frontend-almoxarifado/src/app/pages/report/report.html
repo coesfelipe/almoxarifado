@@ -336,9 +336,11 @@
                 </td>
 
                 <!-- Operador (oculto no print) -->
-                <td class="no-print-col">
+                <td class="col-user no-print-col">
                   <span class="user-badge" [title]="mov.user?.email || 'Sistema'">
-                    <span class="user-avatar-mini">{{ (mov.user?.name || 'S')[0].toUpperCase() }}</span>
+                    <span class="user-avatar-mini">
+                      {{ (mov.user?.name?.trim() || 'S')[0].toUpperCase() }}
+                    </span>
                     <span>{{ mov.user?.name || 'Sistema' }}</span>
                   </span>
                 </td>

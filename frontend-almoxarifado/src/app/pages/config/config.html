@@ -13,6 +13,7 @@
 
     <!-- Navegação por Abas -->
     <nav class="config-tabs">
+      @if (isAdmin() && activeTab() === 'users') {
       <button
         type="button"
         class="tab-btn"
@@ -38,7 +39,7 @@
         <span>Categorias</span>
         <span class="tab-count">{{ categorias().length }}</span>
       </button>
-
+    }
       <!-- Aba Restrita: Apenas Usuários com Papel ADMIN -->
       @if (isAdmin()) {
         <button
@@ -52,7 +53,7 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span>Gestão de Usuários (ADM)</span>
+          <span>Gestão de Usuários</span>
           <span class="tab-count">{{ totalUsuarios() }}</span>
         </button>
       }
@@ -71,6 +72,7 @@
     </nav>
 
     <!-- ════════════════ ABA 1: SETORES ════════════════ -->
+     @if (isAdmin() && activeTab() === 'users') {
     @if (activeTab() === 'sectors') {
       <div class="tab-content">
         @if (setorSuccessMessage()) {
@@ -158,8 +160,9 @@
         </div>
       </div>
     }
-
+  }
     <!-- ════════════════ ABA 2: CATEGORIAS ════════════════ -->
+    @if (isAdmin() && activeTab() === 'users') {
     @if (activeTab() === 'categories') {
       <div class="tab-content">
         @if (categoriaSuccessMessage()) {
@@ -248,6 +251,7 @@
         </div>
       </div>
     }
+  }
 
     <!-- ════════════════ ABA 3: GESTÃO DE USUÁRIOS (ADM) ════════════════ -->
     @if (isAdmin() && activeTab() === 'users') {
