@@ -1,4 +1,3 @@
-<!-- frontend/src/app/pages/stock/stock.html -->
 <app-navbar></app-navbar>
 
 <main class="page">
@@ -95,7 +94,7 @@
             <th class="num">Preço</th>
             <th>Cadastrado por</th>
             <th>Situação</th>
-            <th class="actions-col">Ações</th>
+            <th class="actions-col text-right">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -126,27 +125,27 @@
                   </span>
                 </td>
 
-                  <td>
-                    <div class="actions">
-                      <button type="button" class="btn-action edit" title="Editar" (click)="abrirModalEditar(p)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                        </svg>
-                      </button>
-                      @if (isAdmin()) {
-                      <button type="button" class="btn-action delete btn-delete" title="Excluir" (click)="excluirProduto(p.id, p.name)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                <td class="actions-cell">
+                  <div class="actions">
+                    <button type="button" class="btn-action edit" title="Editar produto" (click)="abrirModalEditar(p)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                      </svg>
+                    </button>
+                    @if (isAdmin()) {
+                      <button type="button" class="btn-action delete" title="Excluir produto" (click)="excluirProduto(p.id, p.name)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="3 6 5 6 21 6"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                           <line x1="10" y1="11" x2="10" y2="17"/>
                           <line x1="14" y1="11" x2="14" y2="17"/>
                         </svg>
                       </button>
                     }
-                    </div>
-                  </td>
+                  </div>
+                </td>
 
               </tr>
             } @empty {
@@ -255,7 +254,7 @@
         </div>
         
         <div class="form-grid">
-          @if (!isEditMode()) {
+          @if (!isEditMode() || (isEditMode() && isAdmin())) {
             <div class="field">
               <label for="currentStock" class="form-label">{{ rotuloEstoque() }}</label>
               <input
@@ -269,22 +268,7 @@
                 <div class="invalid-feedback">O estoque não pode ser negativo.</div>
               }
             </div>
-          } 
-          @if (isEditMode() && isAdmin()) {
-            <div class="field">
-              <label for="currentStock" class="form-label">{{ rotuloEstoque() }}</label>
-              <input
-                type="number"
-                id="currentStock"
-                formControlName="currentStock"
-                class="form-control"
-                [class.is-invalid]="campoInvalido('currentStock')"
-                min="0" />
-              @if (campoInvalido('currentStock')) {
-                <div class="invalid-feedback">O estoque não pode ser negativo.</div>
-              }
-            </div>
-          } 
+          }
 
           <div class="field">
             <label for="measurement" class="form-label">Unidade de Medida *</label>

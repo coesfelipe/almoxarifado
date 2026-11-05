@@ -338,53 +338,52 @@ th.num { text-align: right; }
 }
 
 /* Ações da Tabela */
+/* Ações da Tabela */
 .actions-cell {
   white-space: nowrap;
-
 }
 
-.btn-action,
-.btn-icon {
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.btn-action {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.35rem 0.65rem;
-  border-radius: 8px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   background: #ffffff;
   cursor: pointer;
-  transition: all 0.12s ease;
-  margin-left: 0.4rem;
+  transition: var(--transition);
 }
 
-.btn-edit {
-  color: var(--gray-dark);
+.btn-action.edit {
+  color: var(--gray);
 }
 
-.btn-edit:hover:not(:disabled) {
+.btn-action.edit:hover {
   background: var(--soft);
-  border-color: var(--gray-light);
   color: var(--black);
+  border-color: var(--gray-light);
 }
 
-
-.btn-delete {
+.btn-action.delete {
   color: var(--red);
-  border-color: var(--red-border);
   background: var(--red-bg);
-}
-
-.btn-delete:hover:not(:disabled) {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: var(--red-text);
+  border-color: var(--red-border);
 }
 
 .btn-action.delete:hover {
-  background: var(--red-bg);
-  color: var(--red);
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: var(--red-dark);
 }
 
 /* 7. Rodapé de Paginação */
